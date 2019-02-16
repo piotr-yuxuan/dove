@@ -1,0 +1,35 @@
+#+TITLE:🕊 dove
+
+Recursively infer clojure spec from any (nested) =org.apache.avro.Schema=.
+
+[[resources/avro.jpg]]
+
+Avro was a British aircraft manufacturer. Nowadays it is a data
+serialization framework. A dove is smaller than an Avro aircraft, but
+it's softer and you can hold it in your hand, which makes it much more
+convenient when dealing with data manually.
+
+Its purpose is to recursively infer and register specs
+from any (nested) =org.apache.avro.Schema= so it enables generative
+testing and pre-serialisation validation.
+
+* Usage
+
+#+BEGIN_SRC clojure
+(import '(some.package SomeAvroSchema))
+(require '[dove.core :as dove]
+         '[clojure.spec.alpha :as s]
+         '[clojure.spec.gen.alpha :as g])
+
+(->> (SomeAvroSchema/getClassSchema) ;; Get the RecordSchema
+     dove/infer-spec!                ;; Infer recursive, nested specs
+     s/gen                           ;; Build a generator around this new spec
+     g/generate                      ;; Generate a random sample. It's guaranteed to be avro-serializable.
+     dove/un-ns-kw-keys)             ;; Strip keywords from their namespace (optionnal, syntactic sugar)
+#+END_SRC
+
+* Troubleshoot
+
+This small, pre-alpha quality library is currently under
+development. Feel free to give me any feedback and I'll be more than
+happy to help you.
