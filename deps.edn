@@ -1,0 +1,11 @@
+{:name "dove"
+ :description "Infer clojure spec from org.apache.avro.Schema"
+ :version "0.0.1-SNAPSHOT"
+ :license {:name "GNU GPL, version 3, 29 June 2007"
+           :url "https://www.gnu.org/licenses/gpl-3.0.txt"
+           :addendum "GPL_ADDITION.md"}
+ :paths ["src"]
+ :deps {org.clojure/clojure {:mvn/version "1.10.0"}
+        org.clojure/spec.alpha {:mvn/version "0.2.176"}
+        org.clojure/test.check {:mvn/version "0.10.0-alpha3"}
+        org.apache.avro/avro {:mvn/version "1.8.1"}}}
