@@ -7,191 +7,199 @@
 (defprotocol ToSpec
   (to-spec! [this context]))
 
-(def spec-long?
+(def avro-fixed?
+  (memoize
+    (fn [fixed-size]
+      "Sequence of 8-bit unsigned bytes"
+      (s/with-gen
+        bytes?
+        #(test.g/fmap byte-array (test.g/vector test.g/byte fixed-size))))))
+
+(def avro-int?
+  "Int: 32-bit signed two's complement integer"
+  int?)
+
+(def avro-long?
+  "Long: 64-bit signed integer"
   (s/with-gen
     #(instance? Long %)
     #(test.g/fmap
        long
-       (test.g/double* {:infinite? false
-                        :NaN? false
+       (test.g/double* {:NaN? false
                         :min Long/MIN_VALUE
                         :max Long/MAX_VALUE}))))
 
-(def byte-min (- (Math/pow 2 16)))
-(def byte-max (dec (Math/pow 2 16)))
-
-(def spec-byte? ;; dubious
+(def avro-float?
+  "Imprecise. Single precision (32-bit) IEEE 754 floating-point number"
   (s/with-gen
-    int?
+    #(instance? Float %)
     #(test.g/fmap
-      int
-      (test.g/double* {:min byte-min
-                       :max byte-max}))))
+       float
+       (test.g/double* {:NaN? false
+                        :min Float/MIN_VALUE
+                        :max Float/MAX_VALUE}))))
 
-(def spec-def (memoize eval)) ;; If you're unhappy with that, show me another way.
+(def avro-double?
+  "Imprecise. Double precision (64-bit) IEEE 754 floating-point number"
+  (s/with-gen
+    #(instance? Double %)
+    #(test.g/fmap
+       double
+       (test.g/double* {:NaN? false
+                        :min Double/MIN_VALUE
+                        :max Double/MAX_VALUE}))))
 
 (defn- derive-name
   [parent descendant]
   (str parent "." descendant))
 
-(def field-spec-keyword
-  (memoize
-    (fn [context]
-      (keyword (:spec-ns context)
-               (:spec-name context)))))
+(def debug (atom nil))
+
+(defn spec-def
+  [context spec-symbol]
+  (let [spec-keyword (keyword (:spec-ns context) (:spec-name context))
+        hooks (get context :generator-hooks)
+        spec-var-with-hook (s/with-gen
+                             (eval spec-symbol)
+                             #(test.g/fmap
+                                (fn [generated-value]
+                                  ((get @hooks
+                                        spec-keyword
+                                        identity)
+                                    generated-value))
+                                (s/gen (eval spec-symbol))))]
+    (eval `(s/def
+             ~spec-keyword
+             ~spec-var-with-hook))))
 
 (extend-protocol ToSpec
   Schema$StringSchema
   (to-spec! [this context]
-    (spec-def `(s/def
-                 ~(field-spec-keyword context)
-                 string?))
-    (field-spec-keyword context))
+    (spec-def context `string?)
+    (keyword (:spec-ns context) (:spec-name context)))
 
   Schema$BytesSchema
   (to-spec! [this context]
-    (spec-def `(s/def
-                 ~(field-spec-keyword context)
-                 bytes?))
-    (field-spec-keyword context))
+    (spec-def context `bytes?)
+    (keyword (:spec-ns context) (:spec-name context)))
 
   Schema$IntSchema
   (to-spec! [this context]
-    (spec-def `(s/def
-                 ~(field-spec-keyword context)
-                 int?))
-    (field-spec-keyword context))
+    (spec-def context `avro-int?)
+    (keyword (:spec-ns context) (:spec-name context)))
 
   Schema$LongSchema
   (to-spec! [this context]
-    (spec-def `(s/def
-                 ~(field-spec-keyword context)
-                 spec-long?))
-    (field-spec-keyword context))
+    (spec-def context `avro-long?)
+    (keyword (:spec-ns context) (:spec-name context)))
 
   Schema$FloatSchema
   (to-spec! [this context]
-    (spec-def `(s/def
-                 ~(field-spec-keyword context)
-                 float?))
-    (field-spec-keyword context))
+    (spec-def context `avro-float?)
+    (keyword (:spec-ns context) (:spec-name context)))
 
   Schema$DoubleSchema
   (to-spec! [this context]
-    (spec-def `(s/def
-                 ~(field-spec-keyword context)
-                 double?))
-    (field-spec-keyword context))
+    (spec-def context `avro-double?)
+    (keyword (:spec-ns context) (:spec-name context)))
 
   Schema$BooleanSchema
   (to-spec! [this context]
-    (spec-def `(s/def
-                 ~(field-spec-keyword context)
-                 boolean?))
-    (field-spec-keyword context))
+    (spec-def context `boolean?)
+    (keyword (:spec-ns context) (:spec-name context)))
 
   Schema$NullSchema
   (to-spec! [this context]
-    (spec-def `(s/def
-                 ~(field-spec-keyword context)
-                 nil?))
-    (field-spec-keyword context))
+    (spec-def context `nil?)
+    (keyword (:spec-ns context) (:spec-name context)))
 
   Schema$EnumSchema
   (to-spec! [this context]
     (let [spec-keyword (keyword (.getNamespace this)
                                 (.getName this))
           spec-values (set (.getEnumSymbols this))]
-      (spec-def `(s/def
-                   ~spec-keyword
-                   ~spec-values))
-      (spec-def `(s/def
-                   ~(field-spec-keyword context)
-                   ~spec-keyword))
-      (field-spec-keyword context)))
+      (spec-def (assoc context
+                  :spec-ns (.getNamespace this)
+                  :spec-name (.getName this))
+                `~spec-values)
+      (spec-def context `~spec-keyword)
+      (keyword (:spec-ns context) (:spec-name context))))
 
   Schema$FixedSchema
   (to-spec! [this context]
     (let [spec-keyword (keyword (.getNamespace this)
                                 (.getName this))]
-      (spec-def `(s/def
-                   ~spec-keyword
-                   (s/coll-of spec-byte?
-                              :count ~(.getFixedSize this))))
-      (spec-def `(s/def
-                   ~(field-spec-keyword context)
-                   ~spec-keyword))
-      (field-spec-keyword context)))
+      (spec-def (assoc context
+                  :spec-ns (.getNamespace this)
+                  :spec-name (.getName this))
+                `~(avro-fixed? (.getFixedSize this)))
+      (spec-def context
+                `~spec-keyword)
+      (keyword (:spec-ns context) (:spec-name context))))
 
   Schema$MapSchema
   (to-spec! [this context]
-    (let [spec-keyword (let [value-schema (.getValueType this)
-                             spec-name (derive-name (:spec-name context)
-                                                    (.getName value-schema))]
-                         (to-spec! value-schema (assoc context
-                                                       :spec-name spec-name)))]
-      (spec-def `(s/def
-                   ~(field-spec-keyword context)
-                   (s/map-of string?
-                             ~spec-keyword)))
-      (field-spec-keyword context)))
+    (let [value-schema (.getValueType this)
+          spec-name (derive-name (:spec-name context) (.getName value-schema))
+          spec-keyword (to-spec! value-schema (assoc context :spec-name spec-name))]
+      (spec-def context
+                `~(s/map-of string? spec-keyword))
+      (keyword (:spec-ns context) (:spec-name context))))
 
   Schema$ArraySchema
   (to-spec! [this context]
-    (let [spec-keyword (let [value-schema (.getElementType this)
-                             spec-name (derive-name (:spec-name context)
-                                                    (.getName value-schema))]
-                         (to-spec! value-schema (assoc context
-                                                       :spec-name spec-name)))]
-      (spec-def `(s/def
-                   ~(field-spec-keyword context)
-                   (s/map-of string?
-                             ~spec-keyword)))
-      (field-spec-keyword context)))
+    (let [value-schema (.getElementType this)
+          spec-name (derive-name (:spec-name context) (.getName value-schema))
+          spec-keyword (to-spec! value-schema (assoc context :spec-name spec-name))]
+      (spec-def context
+                `~(s/map-of string? spec-keyword))
+      (keyword (:spec-ns context) (:spec-name context))))
 
   Schema$UnionSchema
   (to-spec! [this context]
     (let [spec-names (->> (.getTypes ^Schema$UnionSchema this)
                           (map (fn [schema]
-                                 (let [spec-name (derive-name (:spec-name context)
-                                                              (.getName schema))]
-                                   (to-spec! schema (assoc context
-                                                           :spec-name spec-name))))))]
-      (spec-def `(s/def
-                   ~(field-spec-keyword context)
-                   (s/or ~@(mapcat (juxt identity
-                                         identity)
-                                   spec-names))))
-      (field-spec-keyword context)))
+                                 (let [spec-name (derive-name (:spec-name context) (.getName schema))]
+                                   (to-spec! schema (assoc context :spec-name spec-name))))))]
+      (spec-def context
+                `(s/or
+                   ~@(mapcat
+                       (juxt identity
+                             identity)
+                       spec-names)))
+      (keyword (:spec-ns context) (:spec-name context))))
 
   Schema$Field
   (to-spec! [this context]
     (to-spec! (.schema this)
               (assoc context
-                     :spec-name (.name this))))
+                :spec-name (.name this))))
 
   Schema$RecordSchema
   (to-spec! [this context]
-    (let [record-fields (.getFields this)
+    (reset! debug [this context])
+    (let [[this context] @debug
+          record-fields (.getFields this)
           spec-ns (.getNamespace this)
           spec-name (.getName this)
           spec-keyword (keyword spec-ns spec-name)
           spec-keys (map (fn [field]
                            (to-spec! field (assoc context
-                                                  :spec-ns (derive-name spec-ns spec-name)
-                                                  :spec-name (.name field))))
+                                             :spec-ns (derive-name spec-ns spec-name)
+                                             :spec-name (.name field))))
                          record-fields)]
       (doseq [field record-fields]
         (to-spec! field (assoc context
-                               :spec-ns (derive-name spec-ns spec-name))))
-      (spec-def `(s/def
-                   ~spec-keyword
+                          :spec-ns (derive-name spec-ns spec-name))))
+      (spec-def (assoc context
+                  :spec-ns spec-ns
+                  :spec-name spec-name)
+                `(s/def
+                   spec-keyword
                    (s/keys :req ~spec-keys)))
       (if (and (:spec-ns context)
                (:spec-name context))
         (do
-          (spec-def `(s/def
-                       ~(field-spec-keyword context)
-                       ~spec-keyword))
-          (field-spec-keyword context))
+          (spec-def context `~spec-keyword)
+          (keyword (:spec-ns context) (:spec-name context)))
         spec-keyword))))
