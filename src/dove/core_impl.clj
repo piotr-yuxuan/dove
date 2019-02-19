@@ -53,24 +53,12 @@
   [parent descendant]
   (str parent "." descendant))
 
-(def debug (atom nil))
-
-(defn spec-def
-  [context spec-symbol]
-  (let [spec-keyword (keyword (:spec-ns context) (:spec-name context))
-        hooks (get context :generator-hooks)
-        spec-var-with-hook (s/with-gen
-                             (eval spec-symbol)
-                             #(test.g/fmap
-                                (fn [generated-value]
-                                  ((get @hooks
-                                        spec-keyword
-                                        identity)
-                                    generated-value))
-                                (s/gen (eval spec-symbol))))]
-    (eval `(s/def
-             ~spec-keyword
-             ~spec-var-with-hook))))
+(def spec-def
+  (memoize
+    (fn [context spec-symbol]
+      (eval `(s/def
+               ~(keyword (:spec-ns context) (:spec-name context))
+               ~(eval spec-symbol))))))
 
 (extend-protocol ToSpec
   Schema$StringSchema
@@ -121,7 +109,7 @@
       (spec-def (assoc context
                   :spec-ns (.getNamespace this)
                   :spec-name (.getName this))
-                `~spec-values)
+                spec-values)
       (spec-def context `~spec-keyword)
       (keyword (:spec-ns context) (:spec-name context))))
 
@@ -173,13 +161,12 @@
   (to-spec! [this context]
     (to-spec! (.schema this)
               (assoc context
+                :spec-field this
                 :spec-name (.name this))))
 
   Schema$RecordSchema
   (to-spec! [this context]
-    (reset! debug [this context])
-    (let [[this context] @debug
-          record-fields (.getFields this)
+    (let [record-fields (.getFields this)
           spec-ns (.getNamespace this)
           spec-name (.getName this)
           spec-keyword (keyword spec-ns spec-name)
@@ -194,9 +181,7 @@
       (spec-def (assoc context
                   :spec-ns spec-ns
                   :spec-name spec-name)
-                `(s/def
-                   spec-keyword
-                   (s/keys :req ~spec-keys)))
+                `(s/keys :req ~spec-keys))
       (if (and (:spec-ns context)
                (:spec-name context))
         (do
