@@ -17,11 +17,6 @@
     (uuid/v4 (.getLong buffer) (.getLong buffer))))
 
 
-(defn infer-spec!
-  "Recursively infer and register spec of record-schema and any nested
-  schemas."
-  [^Schema record-schema]
-  (to-spec! record-schema {}))
 
 (defn f-keys
   "Recursively transforms all map keys from namespaced keywords to
@@ -30,7 +25,7 @@
   (let [g (fn [[k v]] (if (keyword? k) [(f k) v] [k v]))]
     (walk/postwalk (fn [x] (if (map? x) (into {} (map g x)) x)) m)))
 
-(infer-spec! (SomeAvroSchema/getClassSchema))
+(to-spec! (SomeAvroSchema/getClassSchema) {})
 
 (s/def :some.package/UID
   (s/with-gen
