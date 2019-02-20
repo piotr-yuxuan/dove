@@ -5,7 +5,7 @@
   (:import (org.apache.avro Schema$Field Schema$EnumSchema Schema$NullSchema Schema$BooleanSchema Schema$DoubleSchema Schema$FloatSchema Schema$LongSchema Schema$IntSchema Schema$BytesSchema Schema$StringSchema Schema$FixedSchema Schema$RecordSchema Schema$UnionSchema Schema$MapSchema Schema$ArraySchema)))
 
 (defprotocol ToSpec
-  (to-spec! [this context]))
+  (to-spec! [this context] "Recursively infer and register spec of record-schema and any nested schemas."))
 
 (def avro-fixed?
   (memoize
@@ -103,13 +103,20 @@
 
   Schema$EnumSchema
   (to-spec! [this context]
-    (let [spec-keyword (keyword (.getNamespace this)
+    (let [enum-class (Class/forName (.getFullName this))
+          spec-keyword (keyword (.getNamespace this)
                                 (.getName this))
-          spec-values (set (.getEnumSymbols this))]
+          spec-values (set (.getEnumSymbols this))
+          spec-with-gen (s/with-gen
+                          #(instance? enum-class %)
+                          #(test.g/fmap
+                             (fn [enum-str]
+                               (Enum/valueOf enum-class enum-str))
+                             (s/gen spec-values)))]
       (spec-def (assoc context
                   :spec-ns (.getNamespace this)
                   :spec-name (.getName this))
-                spec-values)
+                `~spec-with-gen)
       (spec-def context `~spec-keyword)
       (keyword (:spec-ns context) (:spec-name context))))
 
