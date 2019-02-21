@@ -7,10 +7,10 @@
 (defprotocol ToSpec
   (to-spec! [this context] "Recursively infer and register spec of record-schema and any nested schemas."))
 
-(def avro-fixed?
+(def ->avro-fixed?
+  "Sequence of 8-bit unsigned bytes. Returns a singleton of the given size."
   (memoize
     (fn [fixed-size]
-      "Sequence of 8-bit unsigned bytes"
       (s/with-gen
         bytes?
         #(test.g/fmap byte-array (test.g/vector test.g/byte fixed-size))))))
@@ -49,6 +49,40 @@
                         :min Double/MIN_VALUE
                         :max Double/MAX_VALUE}))))
 
+(def enum-spec-value
+  (memoize
+    (fn [enum-class spec-values]
+      (s/with-gen
+        #(instance? enum-class %)
+        #(test.g/fmap
+           (fn [enum-str]
+             (Enum/valueOf enum-class enum-str))
+           (s/gen spec-values))))))
+
+(def union-spec-symbol
+  (memoize
+    (fn [spec-names]
+      `(s/or
+         ~@(mapcat
+             (juxt identity
+                   identity)
+             spec-names)))))
+
+(def array-spec-value
+  (memoize
+    (fn [spec-keyword]
+      (s/map-of string? spec-keyword))))
+
+(def map-spec-value
+  (memoize
+    (fn [spec-keyword]
+      (s/map-of string? spec-keyword))))
+
+(def record-spec-symbol
+  (memoize
+    (fn [spec-keys]
+      `(s/keys :req ~spec-keys))))
+
 (defn- derive-name
   [parent descendant]
   (str parent "." descendant))
@@ -56,9 +90,11 @@
 (def spec-def
   (memoize
     (fn [context spec-symbol]
-      (eval `(s/def
-               ~(keyword (:spec-ns context) (:spec-name context))
-               ~(eval spec-symbol))))))
+      (if (:dry-run? context)
+        (println "dove: spec definition for" (keyword (:spec-ns context) (:spec-name context)))
+        (eval `(s/def
+                 ~(keyword (:spec-ns context) (:spec-name context))
+                 ~(eval spec-symbol)))))))
 
 (extend-protocol ToSpec
   Schema$StringSchema
@@ -106,17 +142,11 @@
     (let [enum-class (Class/forName (.getFullName this))
           spec-keyword (keyword (.getNamespace this)
                                 (.getName this))
-          spec-values (set (.getEnumSymbols this))
-          spec-with-gen (s/with-gen
-                          #(instance? enum-class %)
-                          #(test.g/fmap
-                             (fn [enum-str]
-                               (Enum/valueOf enum-class enum-str))
-                             (s/gen spec-values)))]
+          spec-values (set (.getEnumSymbols this))]
       (spec-def (assoc context
                   :spec-ns (.getNamespace this)
                   :spec-name (.getName this))
-                `~spec-with-gen)
+                `~(enum-spec-value enum-class spec-values))
       (spec-def context `~spec-keyword)
       (keyword (:spec-ns context) (:spec-name context))))
 
@@ -127,7 +157,7 @@
       (spec-def (assoc context
                   :spec-ns (.getNamespace this)
                   :spec-name (.getName this))
-                `~(avro-fixed? (.getFixedSize this)))
+                `~(->avro-fixed? (.getFixedSize this)))
       (spec-def context
                 `~spec-keyword)
       (keyword (:spec-ns context) (:spec-name context))))
@@ -138,7 +168,7 @@
           spec-name (derive-name (:spec-name context) (.getName value-schema))
           spec-keyword (to-spec! value-schema (assoc context :spec-name spec-name))]
       (spec-def context
-                `~(s/map-of string? spec-keyword))
+                `~(map-spec-value spec-keyword))
       (keyword (:spec-ns context) (:spec-name context))))
 
   Schema$ArraySchema
@@ -147,7 +177,7 @@
           spec-name (derive-name (:spec-name context) (.getName value-schema))
           spec-keyword (to-spec! value-schema (assoc context :spec-name spec-name))]
       (spec-def context
-                `~(s/map-of string? spec-keyword))
+                `~(array-spec-value spec-keyword))
       (keyword (:spec-ns context) (:spec-name context))))
 
   Schema$UnionSchema
@@ -157,11 +187,7 @@
                                  (let [spec-name (derive-name (:spec-name context) (.getName schema))]
                                    (to-spec! schema (assoc context :spec-name spec-name))))))]
       (spec-def context
-                `(s/or
-                   ~@(mapcat
-                       (juxt identity
-                             identity)
-                       spec-names)))
+                (union-spec-symbol spec-names))
       (keyword (:spec-ns context) (:spec-name context))))
 
   Schema$Field
@@ -188,7 +214,7 @@
       (spec-def (assoc context
                   :spec-ns spec-ns
                   :spec-name spec-name)
-                `(s/keys :req ~spec-keys))
+                (record-spec-symbol spec-keys))
       (if (and (:spec-ns context)
                (:spec-name context))
         (do

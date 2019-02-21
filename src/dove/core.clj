@@ -25,27 +25,32 @@
   (let [g (fn [[k v]] (if (keyword? k) [(f k) v] [k v]))]
     (walk/postwalk (fn [x] (if (map? x) (into {} (map g x)) x)) m)))
 
-(to-spec! (SomeAvroSchema/getClassSchema) {})
+(to-spec! (SomeAvroSchema/getClassSchema) {:dry-run? false})
 
 (s/def :some.package/UID
   (s/with-gen
     uuid?
-    #(test.g/fmap bytes-to-uuid (s/gen (avro-fixed? 16)))))
-
-(s/def :some.package/IPv4
-  (s/with-gen
-    ip/address?
-    #(test.g/fmap ip/address (s/gen (avro-fixed? 4)))))
-
-(s/def :some.package/IPv6
-  (s/with-gen
-    ip/address?
-    #(test.g/fmap ip/address (s/gen (avro-fixed? 16)))))
+    #(test.g/fmap bytes-to-uuid (s/gen (->avro-fixed? 16)))))
 
 (->> :some.package/UID
      s/gen
      g/generate)
 
-(->> :some.package/IPv6
+(s/def :some.package/IPv4
+  (s/with-gen
+    ip/address?
+    #(test.g/fmap ip/address (s/gen (->avro-fixed? 4)))))
+
+(->> :some.package/IPv4
      s/gen
      g/generate)
+
+(s/def :some.package/IPv6
+  (s/with-gen
+    ip/address?
+    #(test.g/fmap ip/address (s/gen (->avro-fixed? 16)))))
+
+(->> :some.package/IPv6
+     s/gen
+     g/generate
+     (f-keys (comp keyword name)))
