@@ -1,4 +1,6 @@
-#+TITLE:🕊 dove
+#+TITLE:🕊 [[https://clojars.org/dove][dove]] [[https://img.shields.io/clojars/v/dove.svg]]
+
+https://clojars.org/dove
 
 Recursively infer clojure spec from any (nested) =org.apache.avro.Schema=.
 
@@ -21,11 +23,44 @@ testing and pre-serialisation validation.
          '[clojure.spec.alpha :as s]
          '[clojure.spec.gen.alpha :as g])
 
-(->> (SomeAvroSchema/getClassSchema) ;; Get the RecordSchema
-     dove/infer-spec!                ;; Infer recursive, nested specs
-     s/gen                           ;; Build a generator around this new spec
-     g/generate                      ;; Generate a random sample. It's guaranteed to be avro-serializable.
-     dove/un-ns-kw-keys)             ;; Strip keywords from their namespace (optionnal, syntactic sugar)
+(to-spec!
+ (SomeAvroSchema/getClassSchema)
+ {:dry-run? false})
+
+(s/def :some.package/UID
+  (s/with-gen
+    uuid?
+    #(test.g/fmap bytes-to-uuid (s/gen (->avro-fixed? 16)))))
+
+(->> :some.package/UID
+     s/gen
+     g/generate)
+
+(s/def :some.package/IPv4
+  (s/with-gen
+    ip/address?
+    #(test.g/fmap ip/address (s/gen (->avro-fixed? 4)))))
+
+(->> :some.package/IPv4
+     s/gen
+     g/generate)
+
+(s/def :some.package/IPv6
+  (s/with-gen
+    ip/address?
+    #(test.g/fmap ip/address (s/gen (->avro-fixed? 16)))))
+
+(->> :some.package/IPv6
+     s/gen
+     g/generate
+     (f-keys (comp keyword name)))
+
+(->> :some.package/SomeAvroSchema
+     s/gen
+     g/generate
+     ;; Strip keywords from their namespace (optionnal, syntactic
+     ;; sugar to ease integration with existing codebase)
+     (dove/f-keys (comp keyword name)))
 #+END_SRC
 
 * Troubleshoot
