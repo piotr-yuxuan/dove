@@ -68,3 +68,12 @@ testing and pre-serialisation validation.
 This small, pre-alpha quality library is currently under
 development. Feel free to give me any feedback and I'll be more than
 happy to help you.
+
+* Related projects
+
+I've got a great deal of inspiration from these projects. They might
+suit your needs better than dove. Each of them is pretty impressive!
+
+- =[[https://github.com/deercreeklabs/lancaster][lancaster]]= from [[https://github.com/chadharrington][Chad Harrington]]
+- =[[https://github.com/metosin/spec-tools][spec-tools]]= from [[https://github.com/ikitommi][Tommi Reiman]]
+- =[[https://github.com/stathissideris/spec-provider][spec-provider]]= from [[https://github.com/stathissideris][Stathis Sideris]]
