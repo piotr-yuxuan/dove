@@ -1,17 +1,24 @@
 (ns dove.core
-  "Avro schema are constant, spec are designed to be constant. As a result, side effects are acceptable in protocol ToSpec"
+  "Avro schema are constant, spec are designed to be constant. As a result, side effects are acceptable in protocol ToSpec. `assert` is used more than usual. Wherever an inconsistent state is detected, it's prefered to raise a contextual error message rather than unclear exception or worse: an erroneous output."
   (:require [clojure.spec.alpha :as s]
             [clojure.test.check.generators :as test.g]
             [clj-time.coerce :as tc]
-            [clojure.walk :as walk])
-  (:import (org.apache.avro Schema$Field Schema$EnumSchema Schema$NullSchema Schema$BooleanSchema Schema$DoubleSchema Schema$FloatSchema Schema$LongSchema Schema$IntSchema Schema$BytesSchema Schema$StringSchema Schema$FixedSchema Schema$RecordSchema Schema$UnionSchema Schema$MapSchema Schema$ArraySchema LogicalTypes$Date LogicalTypes$TimestampMillis Schema$Type)
+            [clojure.walk :as walk]
+            [clojure.spec.gen.alpha :as g])
+  (:import (org.apache.avro Schema$Field Schema$EnumSchema Schema$NullSchema Schema$BooleanSchema Schema$DoubleSchema Schema$FloatSchema Schema$LongSchema Schema$IntSchema Schema$BytesSchema Schema$StringSchema Schema$FixedSchema Schema$RecordSchema Schema$UnionSchema Schema$MapSchema Schema$ArraySchema LogicalTypes$Date LogicalTypes$TimestampMillis Schema$Type Schema)
            (java.time LocalDate)
-           (org.joda.time DateTime)))
+           (org.joda.time DateTime)
+           (org.apache.avro.specific SpecificRecordBase)))
 
-(def ignored-specs (atom #{}))
+(def ignored-specs
+  "Spec not to be infered. Useful if you want to use some custom specs. Used by to-spec! to register a spec only once."
+  (atom #{}))
 
 (defprotocol ToSpec
   (to-spec! [this context] "Recursively infer and register spec of record-schema and any nested schemas."))
+
+(defprotocol MapQualifier
+  (-qualify-map [schema args] "Recursively qualify keys of a map to match some schema namespace."))
 
 (def ->avro-fixed?
   "Sequence of 8-bit unsigned bytes. Returns a singleton of the given size."
@@ -263,9 +270,6 @@
           (keyword (:spec-ns context) (:spec-name context)))
         spec-keyword))))
 
-(defprotocol MapQualifier
-  (-qualify-map [schema args]))
-
 (extend-protocol MapQualifier
   Schema$MapSchema
   (-qualify-map [schema args]
@@ -297,7 +301,7 @@
           _ (assert explicit-union-types "Qualifying a union requires :explicit-union-types.")
           possible-types (.getTypes schema)
           explicit-type (explicit-union-types possible-types (-> args :path reverse) (:value args))
-          _ (assert explicit-type "Qualifying a union requires a matching explicit type.")]
+          _ (assert explicit-type "Qualifying a union requires an matching explicit type.")]
       (-qualify-map explicit-type args)))
 
   Schema$RecordSchema
@@ -310,7 +314,9 @@
                            (map name))
           missing-keys (remove (set actual-keys) required-keys)]
       (assert (empty? missing-keys)
-              (str "Qualifying data to match a schema requires all schema attributes to be filled. Missing: " (vec missing-keys))))
+              (str "Qualifying data to match a schema requires all schema attributes to be filled."
+                   {:path (reverse (:path args))
+                    :missing-keys missing-keys})))
     (into
       (-> args :value empty)
       (map (fn [[k v]]
@@ -338,7 +344,7 @@
       (last possible-types)
       (first possible-types)))
   ```"
-  [explicit-union-types schema value]
+  [value schema explicit-union-types]
   (-qualify-map schema
                 {:value value
                  :explicit-union-types explicit-union-types}))
