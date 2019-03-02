@@ -3,19 +3,25 @@
   (:require [clojure.spec.alpha :as s]
             [clojure.test.check.generators :as test.g]
             [clj-time.coerce :as tc]
-            [clojure.walk :as walk]
-            [clojure.spec.gen.alpha :as g])
-  (:import (org.apache.avro Schema$Field Schema$EnumSchema Schema$NullSchema Schema$BooleanSchema Schema$DoubleSchema Schema$FloatSchema Schema$LongSchema Schema$IntSchema Schema$BytesSchema Schema$StringSchema Schema$FixedSchema Schema$RecordSchema Schema$UnionSchema Schema$MapSchema Schema$ArraySchema LogicalTypes$Date LogicalTypes$TimestampMillis Schema$Type Schema)
+            [camel-snake-kebab.extras :as case.e])
+  (:import (org.apache.avro Schema$Field Schema$EnumSchema Schema$NullSchema Schema$BooleanSchema Schema$DoubleSchema Schema$FloatSchema Schema$LongSchema Schema$IntSchema Schema$BytesSchema Schema$StringSchema Schema$FixedSchema Schema$RecordSchema Schema$UnionSchema Schema$MapSchema Schema$ArraySchema LogicalTypes$Date LogicalTypes$TimestampMillis Schema$Type)
            (java.time LocalDate)
-           (org.joda.time DateTime)
-           (org.apache.avro.specific SpecificRecordBase)))
+           (org.joda.time DateTime)))
+
+(def convenient-args
+  "These args are not meant to be your default choice, but they are somehow convenient to use."
+  {:hide-schema-name? false
+   :dry-run? false
+   :ns-keys? false
+   :enum-obj? false
+   :optional-nil? true})
 
 (def ignored-specs
-  "Spec not to be infered. Useful if you want to use some custom specs. Used by to-spec! to register a spec only once."
+  "Spec not to be infered. Useful if you want to use some custom specs. Used by to-spec! to keep track of specs and register a spec only once."
   (atom #{}))
 
 (defprotocol ToSpec
-  (to-spec! [this context] "Recursively infer and register spec of record-schema and any nested schemas."))
+  (to-spec! [this args] "Recursively infer and register spec of record-schema and any nested schemas."))
 
 (defprotocol MapQualifier
   (-qualify-map [schema args] "Recursively qualify keys of a map to match some schema namespace."))
@@ -114,10 +120,26 @@
 
 (def record-spec-symbol
   (memoize
-    (fn [spec-keys]
-      `(s/keys :req ~spec-keys))))
+    (fn [context spec-keys]
+      (let [spec-name (keyword (:spec-ns context) (:spec-name context))]
+        (if (:hide-schema-name? context)
+          `(s/keys
+             ~(if (:ns-keys? context) :req :req-un) [~@(:required spec-keys)]
+             ~(if (:ns-keys? context) :opt :opt-un) [~@(:optional spec-keys)])
+          `(s/with-gen
+             (s/keys
+               ~(if (:ns-keys? context) :req :req-un) [~@(:required spec-keys)]
+               ~(if (:ns-keys? context) :opt :opt-un) [~@(:optional spec-keys)])
+             #(test.g/fmap
+                (fn [value#]
+                  (assoc value#
+                    :dove.spec/name ~spec-name))
+                (s/gen
+                  (s/keys
+                    ~(if (:ns-keys? context) :req :req-un) [~@(:required spec-keys)]
+                    ~(if (:ns-keys? context) :opt :opt-un) [~@(:optional spec-keys)])))))))))
 
-(defn- hierarchy-derive
+(defn hierarchy-derive
   [parent descendant]
   (str parent "." descendant))
 
@@ -137,6 +159,22 @@
                    ~(keyword (:spec-ns context) (:spec-name context))
                    ~(eval spec-symbol)))))
   (keyword (:spec-ns context) (:spec-name context)))
+
+(def optional-key?
+  (memoize
+    (fn [field context]
+      (if (and (:optional-nil? context)
+               (->> field
+                    .schema
+                    .getType
+                    (= Schema$Type/UNION))
+               (->> field
+                    .schema
+                    .getTypes
+                    (map #(.getType %))
+                    (some #(= % Schema$Type/NULL))))
+        :optional
+        :required))))
 
 (extend-protocol ToSpec
   Schema$StringSchema
@@ -192,9 +230,9 @@
       (spec-def (assoc context
                   :spec-ns (.getNamespace this)
                   :spec-name (.getName this))
-                (if (:enum-str? context)
-                  `~(enum-str-spec-value spec-values)
-                  `~(enum-obj-spec-value enum-class spec-values)))
+                (if (:enum-obj? context)
+                  `~(enum-obj-spec-value enum-class spec-values)
+                  `~(enum-str-spec-value spec-values)))
       (spec-def context `~spec-keyword)
       (keyword (:spec-ns context) (:spec-name context))))
 
@@ -251,18 +289,23 @@
           spec-ns (.getNamespace this)
           spec-name (.getName this)
           spec-keyword (keyword spec-ns spec-name)
-          spec-keys (map (fn [field]
-                           (to-spec! field (assoc context
-                                             :spec-ns (hierarchy-derive spec-ns spec-name)
-                                             :spec-name (.name field))))
-                         record-fields)]
+          spec-keys (reduce (fn [acc field]
+                              (let [spec-key (to-spec! field (assoc context
+                                                               :spec-ns (hierarchy-derive spec-ns spec-name)
+                                                               :spec-name (.name field)))]
+                                (update acc (optional-key? field context) conj spec-key)))
+                            {}
+                            record-fields)]
       (doseq [field record-fields]
         (to-spec! field (assoc context
                           :spec-ns (hierarchy-derive spec-ns spec-name))))
       (spec-def (assoc context
                   :spec-ns spec-ns
                   :spec-name spec-name)
-                (record-spec-symbol spec-keys))
+                (record-spec-symbol (assoc context
+                                      :spec-ns spec-ns
+                                      :spec-name spec-name)
+                                    spec-keys))
       (if (and (:spec-ns context)
                (:spec-name context))
         (do
@@ -349,12 +392,9 @@
                 {:value value
                  :explicit-union-types explicit-union-types}))
 
-(defn transform-keys
-  "Recursively transforms all map keys."
-  [m f]
-  (let [g (fn [[k v]] (if (keyword? k) [(f k) v] [k v]))]
-    (walk/postwalk (fn [x] (if (map? x) (into {} (map g x)) x)) m)))
+(def transform-keys
+  case.e/transform-keys)
 
 (def unqualify-map
   "Recursively unqualify keys of a map, provided they're keyword."
-  #(transform-keys % (comp keyword name)))
+  #(case.e/transform-keys (comp keyword name) %))
