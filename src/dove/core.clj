@@ -10,7 +10,8 @@
             [camel-snake-kebab.extras :as case.e])
   (:import (org.apache.avro Schema$Field Schema$EnumSchema Schema$NullSchema Schema$BooleanSchema Schema$DoubleSchema Schema$FloatSchema Schema$LongSchema Schema$IntSchema Schema$BytesSchema Schema$StringSchema Schema$FixedSchema Schema$RecordSchema Schema$UnionSchema Schema$MapSchema Schema$ArraySchema LogicalTypes$Date LogicalTypes$TimestampMillis Schema$Type)
            (java.time LocalDate)
-           (org.joda.time DateTime)))
+           (org.joda.time DateTime)
+           (java.nio ByteBuffer)))
 
 (def dove-spec-keyword
   :dove.spec/name)
@@ -45,7 +46,8 @@
   (memoize
     (fn [fixed-size]
       (s/with-gen
-        bytes?
+        #(and (bytes? %)
+              (= fixed-size (.limit (ByteBuffer/wrap %))))
         #(test.g/fmap byte-array (test.g/vector test.g/byte fixed-size))))))
 
 (def avro-int?
