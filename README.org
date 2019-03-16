@@ -85,7 +85,12 @@ suit your needs better than dove. Each of them is pretty impressive!
 This project setting configures everything for a REPL, it should have different settings for the production build and the dev setup.
 
 #+BEGIN_SRC zsh
-$ mvn clean generate-sources compile
-# This can be simplified: 
+# Do you need to get back to a clean state?
+§ mvn clean
+
+# Then execute
 $ mvn compile
+
+# You can also choose
+$ mvn generate-sources compile
 #+END_SRC
