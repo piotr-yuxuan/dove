@@ -120,10 +120,10 @@
       (testing "fixed"
         (dove/to-spec! (Fixed8/getClassSchema) dove/convenient-args)
         (let [fixed-8 (gen/generate (s/gen :dove/Fixed8))]
-          (s/valid? (dove/->avro-fixed? 8) fixed-8))
+          (is (s/valid? (dove/->avro-fixed? 8) fixed-8)))
         (dove/to-spec! (Fixed16/getClassSchema) dove/convenient-args)
         (let [fixed-16 (gen/generate (s/gen :dove/Fixed16))]
-          (s/valid? (dove/->avro-fixed? 16) fixed-16))))
+          (is (s/valid? (dove/->avro-fixed? 16) fixed-16)))))
     (testing "named types"
       ;; checking types have correct kw.
       (testing "record")
