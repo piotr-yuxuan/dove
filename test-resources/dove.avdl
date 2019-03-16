@@ -1,0 +1,22 @@
+@namespace("dove")
+
+protocol Messages {
+
+  fixed UID(16);
+  fixed IPv4(4);
+  fixed IPv6(16);
+
+  record NestedSchema {
+    union { null, IPv4, IPv6 } nestedIp = null;
+    union { null, array<NestedSchema> } nestedRecursiveArrayUnion = null;
+  }
+
+  record TestSchema {
+    int myInt;
+    int myDefaultInt = 2;
+    boolean myBoolean;
+    union { int, null, boolean } weirdUnion= 1;
+    map<int> ids = {};
+    union { null, array<NestedSchema> } arrayUnion = null;
+  }
+}

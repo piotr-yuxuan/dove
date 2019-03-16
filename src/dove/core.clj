@@ -1,12 +1,18 @@
 (ns dove.core
-  "Avro schema are constant, spec are designed to be constant. As a result, side effects are acceptable in protocol ToSpec. `assert` is used more than usual. Wherever an inconsistent state is detected, it's prefered to raise a contextual error message rather than unclear exception or worse: an erroneous output."
+  "Avro schema are constant, spec are designed to be constant. As a result, side effects are acceptable in protocol ToSpec. `assert` is used more than usual. Wherever an inconsistent state is detected, it's prefered to raise a argsual error message rather than unclear exception or worse: an erroneous output."
   (:require [clojure.spec.alpha :as s]
             [clojure.test.check.generators :as test.g]
             [clj-time.coerce :as tc]
             [camel-snake-kebab.extras :as case.e])
   (:import (org.apache.avro Schema$Field Schema$EnumSchema Schema$NullSchema Schema$BooleanSchema Schema$DoubleSchema Schema$FloatSchema Schema$LongSchema Schema$IntSchema Schema$BytesSchema Schema$StringSchema Schema$FixedSchema Schema$RecordSchema Schema$UnionSchema Schema$MapSchema Schema$ArraySchema LogicalTypes$Date LogicalTypes$TimestampMillis Schema$Type)
            (java.time LocalDate)
-           (org.joda.time DateTime)))
+           (org.joda.time DateTime)
+           (dove IPv4)))
+
+(def dove-spec-keyword
+  :dove.spec/name)
+
+dove.IPv4
 
 (def convenient-args
   "These args are not meant to be your default choice, but they are somehow convenient to use."
@@ -14,7 +20,8 @@
    :dry-run? false
    :ns-keys? false
    :enum-obj? false
-   :optional-nil? true})
+   :optional-nil? true
+   :dove.spec/keyword dove-spec-keyword})
 
 (def ignored-specs
   "Spec not to be infered. Useful if you want to use some custom specs. Used by to-spec! to keep track of specs and register a spec only once."
@@ -97,6 +104,7 @@
 (def enum-str-spec-value
   (memoize
     (fn [spec-values]
+
       (set spec-values))))
 
 (def union-spec-symbol
@@ -120,50 +128,50 @@
 
 (def record-spec-symbol
   (memoize
-    (fn [context spec-keys]
-      (let [spec-name (keyword (:spec-ns context) (:spec-name context))]
-        (if (:hide-schema-name? context)
+    (fn [args spec-keys]
+      (let [spec-name (keyword (:spec-ns args) (:spec-name args))]
+        (if (:hide-schema-name? args)
           `(s/keys
-             ~(if (:ns-keys? context) :req :req-un) [~@(:required spec-keys)]
-             ~(if (:ns-keys? context) :opt :opt-un) [~@(:optional spec-keys)])
+             ~(if (:ns-keys? args) :req :req-un) [~@(:required spec-keys)]
+             ~(if (:ns-keys? args) :opt :opt-un) [~@(:optional spec-keys)])
           `(s/with-gen
              (s/keys
-               ~(if (:ns-keys? context) :req :req-un) [~@(:required spec-keys)]
-               ~(if (:ns-keys? context) :opt :opt-un) [~@(:optional spec-keys)])
+               ~(if (:ns-keys? args) :req :req-un) [~@(:required spec-keys)]
+               ~(if (:ns-keys? args) :opt :opt-un) [~@(:optional spec-keys)])
              #(test.g/fmap
                 (fn [value#]
                   (assoc value#
-                    :dove.spec/name ~spec-name))
+                    ~(:dove.spec/keyword args dove-spec-keyword) ~spec-name))
                 (s/gen
                   (s/keys
-                    ~(if (:ns-keys? context) :req :req-un) [~@(:required spec-keys)]
-                    ~(if (:ns-keys? context) :opt :opt-un) [~@(:optional spec-keys)])))))))))
+                    ~(if (:ns-keys? args) :req :req-un) [~@(:required spec-keys)]
+                    ~(if (:ns-keys? args) :opt :opt-un) [~@(:optional spec-keys)])))))))))
 
 (defn hierarchy-derive
   [parent descendant]
   (str parent "." descendant))
 
 (defn ignore-spec?
-  [context]
-  (contains? @ignored-specs (keyword (:spec-ns context) (:spec-name context))))
+  [args]
+  (contains? @ignored-specs (keyword (:spec-ns args) (:spec-name args))))
 
 (defn spec-def
-  [context spec-symbol]
-  (cond (:dry-run? context)
-        (println "dove: spec definition for" (keyword (:spec-ns context) (:spec-name context)))
+  [args spec-symbol]
+  (cond (:dry-run? args)
+        (println "dove: spec definition for" (keyword (:spec-ns args) (:spec-name args)))
 
-        (not (ignore-spec? context))
+        (not (ignore-spec? args))
         (do
-          (swap! ignored-specs conj (keyword (:spec-ns context) (:spec-name context)))
+          (swap! ignored-specs conj (keyword (:spec-ns args) (:spec-name args)))
           (eval `(s/def
-                   ~(keyword (:spec-ns context) (:spec-name context))
+                   ~(keyword (:spec-ns args) (:spec-name args))
                    ~(eval spec-symbol)))))
-  (keyword (:spec-ns context) (:spec-name context)))
+  (keyword (:spec-ns args) (:spec-name args)))
 
 (def optional-key?
   (memoize
-    (fn [field context]
-      (if (and (:optional-nil? context)
+    (fn [field args]
+      (if (and (:optional-nil? args)
                (->> field
                     .schema
                     .getType
@@ -178,139 +186,139 @@
 
 (extend-protocol ToSpec
   Schema$StringSchema
-  (to-spec! [this context]
-    (spec-def context `string?)
-    (keyword (:spec-ns context) (:spec-name context)))
+  (to-spec! [this args]
+    (spec-def args `string?)
+    (keyword (:spec-ns args) (:spec-name args)))
 
   Schema$BytesSchema
-  (to-spec! [this context]
-    (spec-def context `bytes?)
-    (keyword (:spec-ns context) (:spec-name context)))
+  (to-spec! [this args]
+    (spec-def args `bytes?)
+    (keyword (:spec-ns args) (:spec-name args)))
 
   Schema$IntSchema
-  (to-spec! [this context]
+  (to-spec! [this args]
     (let [logical-type (.getLogicalType this)]
-      (cond (instance? LogicalTypes$Date logical-type) (spec-def context `avro-logical-date?)
-            :default (spec-def context `avro-int?)))
-    (keyword (:spec-ns context) (:spec-name context)))
+      (cond (instance? LogicalTypes$Date logical-type) (spec-def args `avro-logical-date?)
+            :default (spec-def args `avro-int?)))
+    (keyword (:spec-ns args) (:spec-name args)))
 
   Schema$LongSchema
-  (to-spec! [this context]
+  (to-spec! [this args]
     (let [logical-type (.getLogicalType this)]
-      (cond (instance? LogicalTypes$TimestampMillis logical-type) (spec-def context `avro-logical-timestamp-millis?)
-            :default (spec-def context `avro-long?)))
-    (keyword (:spec-ns context) (:spec-name context)))
+      (cond (instance? LogicalTypes$TimestampMillis logical-type) (spec-def args `avro-logical-timestamp-millis?)
+            :default (spec-def args `avro-long?)))
+    (keyword (:spec-ns args) (:spec-name args)))
 
   Schema$FloatSchema
-  (to-spec! [this context]
-    (spec-def context `avro-float?)
-    (keyword (:spec-ns context) (:spec-name context)))
+  (to-spec! [this args]
+    (spec-def args `avro-float?)
+    (keyword (:spec-ns args) (:spec-name args)))
 
   Schema$DoubleSchema
-  (to-spec! [this context]
-    (spec-def context `avro-double?)
-    (keyword (:spec-ns context) (:spec-name context)))
+  (to-spec! [this args]
+    (spec-def args `avro-double?)
+    (keyword (:spec-ns args) (:spec-name args)))
 
   Schema$BooleanSchema
-  (to-spec! [this context]
-    (spec-def context `boolean?)
-    (keyword (:spec-ns context) (:spec-name context)))
+  (to-spec! [this args]
+    (spec-def args `boolean?)
+    (keyword (:spec-ns args) (:spec-name args)))
 
   Schema$NullSchema
-  (to-spec! [this context]
-    (spec-def context `nil?)
-    (keyword (:spec-ns context) (:spec-name context)))
+  (to-spec! [this args]
+    (spec-def args `nil?)
+    (keyword (:spec-ns args) (:spec-name args)))
 
   Schema$EnumSchema
-  (to-spec! [this context]
+  (to-spec! [this args]
     (let [enum-class (Class/forName (.getFullName this))
           spec-keyword (keyword (.getNamespace this)
                                 (.getName this))
           spec-values (.getEnumSymbols this)]
-      (spec-def (assoc context
+      (spec-def (assoc args
                   :spec-ns (.getNamespace this)
                   :spec-name (.getName this))
-                (if (:enum-obj? context)
+                (if (:enum-obj? args)
                   `~(enum-obj-spec-value enum-class spec-values)
                   `~(enum-str-spec-value spec-values)))
-      (spec-def context `~spec-keyword)
-      (keyword (:spec-ns context) (:spec-name context))))
+      (spec-def args `~spec-keyword)
+      (keyword (:spec-ns args) (:spec-name args))))
 
   Schema$FixedSchema
-  (to-spec! [this context]
+  (to-spec! [this args]
     (let [spec-keyword (keyword (.getNamespace this)
                                 (.getName this))]
-      (spec-def (assoc context
+      (spec-def (assoc args
                   :spec-ns (.getNamespace this)
                   :spec-name (.getName this))
                 `~(->avro-fixed? (.getFixedSize this)))
-      (spec-def context
+      (spec-def args
                 `~spec-keyword)
-      (keyword (:spec-ns context) (:spec-name context))))
+      (keyword (:spec-ns args) (:spec-name args))))
 
   Schema$MapSchema
-  (to-spec! [this context]
+  (to-spec! [this args]
     (let [value-schema (.getValueType this)
-          spec-name (hierarchy-derive (:spec-name context) (.getName value-schema))
-          spec-keyword (to-spec! value-schema (assoc context :spec-name spec-name))]
-      (spec-def context
+          spec-name (hierarchy-derive (:spec-name args) (.getName value-schema))
+          spec-keyword (to-spec! value-schema (assoc args :spec-name spec-name))]
+      (spec-def args
                 `~(map-spec-value spec-keyword))
-      (keyword (:spec-ns context) (:spec-name context))))
+      (keyword (:spec-ns args) (:spec-name args))))
 
   Schema$ArraySchema
-  (to-spec! [this context]
+  (to-spec! [this args]
     (let [value-schema (.getElementType this)
-          spec-name (hierarchy-derive (:spec-name context) (.getName value-schema))
-          spec-keyword (to-spec! value-schema (assoc context :spec-name spec-name))]
-      (spec-def context
+          spec-name (hierarchy-derive (:spec-name args) (.getName value-schema))
+          spec-keyword (to-spec! value-schema (assoc args :spec-name spec-name))]
+      (spec-def args
                 `~(array-spec-value spec-keyword))
-      (keyword (:spec-ns context) (:spec-name context))))
+      (keyword (:spec-ns args) (:spec-name args))))
 
   Schema$UnionSchema
-  (to-spec! [this context]
+  (to-spec! [this args]
     (let [spec-names (->> (.getTypes ^Schema$UnionSchema this)
                           (map (fn [schema]
-                                 (let [spec-name (hierarchy-derive (:spec-name context) (.getName schema))]
-                                   (to-spec! schema (assoc context :spec-name spec-name))))))]
-      (spec-def context
+                                 (let [spec-name (hierarchy-derive (:spec-name args) (.getName schema))]
+                                   (to-spec! schema (assoc args :spec-name spec-name))))))]
+      (spec-def args
                 (union-spec-symbol spec-names))
-      (keyword (:spec-ns context) (:spec-name context))))
+      (keyword (:spec-ns args) (:spec-name args))))
 
   Schema$Field
-  (to-spec! [this context]
+  (to-spec! [this args]
     (to-spec! (.schema this)
-              (assoc context
+              (assoc args
                 :spec-field this
                 :spec-name (.name this))))
 
   Schema$RecordSchema
-  (to-spec! [this context]
+  (to-spec! [this args]
     (let [record-fields (.getFields this)
           spec-ns (.getNamespace this)
           spec-name (.getName this)
           spec-keyword (keyword spec-ns spec-name)
           spec-keys (reduce (fn [acc field]
-                              (let [spec-key (to-spec! field (assoc context
+                              (let [spec-key (to-spec! field (assoc args
                                                                :spec-ns (hierarchy-derive spec-ns spec-name)
                                                                :spec-name (.name field)))]
-                                (update acc (optional-key? field context) conj spec-key)))
+                                (update acc (optional-key? field args) conj spec-key)))
                             {}
                             record-fields)]
       (doseq [field record-fields]
-        (to-spec! field (assoc context
+        (to-spec! field (assoc args
                           :spec-ns (hierarchy-derive spec-ns spec-name))))
-      (spec-def (assoc context
+      (spec-def (assoc args
                   :spec-ns spec-ns
                   :spec-name spec-name)
-                (record-spec-symbol (assoc context
+                (record-spec-symbol (assoc args
                                       :spec-ns spec-ns
                                       :spec-name spec-name)
                                     spec-keys))
-      (if (and (:spec-ns context)
-               (:spec-name context))
+      (if (and (:spec-ns args)
+               (:spec-name args))
         (do
-          (spec-def context `~spec-keyword)
-          (keyword (:spec-ns context) (:spec-name context)))
+          (spec-def args `~spec-keyword)
+          (keyword (:spec-ns args) (:spec-name args)))
         spec-keyword))))
 
 (extend-protocol MapQualifier
@@ -359,7 +367,7 @@
       (assert (empty? missing-keys)
               (str "Qualifying data to match a schema requires all schema attributes to be filled."
                    {:path (reverse (:path args))
-                    :missing-keys missing-keys})))
+                    :missing-key missing-keys})))
     (into
       (-> args :value empty)
       (map (fn [[k v]]

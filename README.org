@@ -6,6 +6,8 @@ Recursively infer clojure spec from any (nested) =org.apache.avro.Schema=.
 
 [[resources/avro.jpg]]
 
+https://avro.apache.org/docs/current/spec.html#Logical+Types
+
 Avro was a British aircraft manufacturer. Nowadays it is a data
 serialization framework. A dove is smaller than an Avro aircraft, but
 it's softer and you can hold it in your hand, which makes it much more

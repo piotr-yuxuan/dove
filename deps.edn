@@ -4,9 +4,18 @@
  :license {:name "GNU GPL, version 3, 29 June 2007"
            :url "https://www.gnu.org/licenses/gpl-3.0.txt"
            :addendum "GPL_ADDITION.md"}
- :paths ["src"]
- :deps {org.clojure/clojure {:mvn/version "1.10.0"}
+ :paths ["src" "test" "target/classes" "target/classes/dove"]
+ :mvn/repos {"io.confluent" {:url "https://packages.confluent.io/maven/"}}
+ :deps {camel-snake-kebab {:mvn/version "0.4.0"}
+        potemkin {:mvn/version "0.4.5"}
+        org.clojure/clojure {:mvn/version "1.10.0"}
         org.clojure/spec.alpha {:mvn/version "0.2.176"}
         org.clojure/test.check {:mvn/version "0.10.0-alpha3"}
         org.apache.avro/avro {:mvn/version "1.8.2"}
-        clj-time {:mvn/version "0.15.1"}}}
+        clj-time {:mvn/version "0.15.1"}}
+ :aliases {:pom {:extra-deps {org.apache.avro/avro-maven-plugin {:mvn/version "1.8.2"}}}
+           :test {:main-opts ["-m" "cognitect.test-runner"
+                              "-d" "test"]
+                  :extra-paths ["test"]
+                  :extra-deps {com.cognitect/test-runner {:git/url "git@github.com:cognitect-labs/test-runner"
+                                                          :sha "209b64504cb3bd3b99ecfec7937b358a879f55c1"}}}}}
