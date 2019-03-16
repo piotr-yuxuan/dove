@@ -2,27 +2,29 @@
   (:require [clojure.test :refer :all]
             [dove.core :as dove])
   (:use [potemkin.collections])
-  (:import (dove IPv4)))
+  (:import (dove IPv6 IPv4)))
 
-;; (dove/to-spec! (IPv4/getClassSchema) dove/convenient-args)
+(IPv6/getClassSchema)
+
+(dove/to-spec! (IPv4/getClassSchema) dove/convenient-args)
 
 (def-map-type
   RecordMap [m mta]
   (get [_ k default-value]
-       (if (contains? m k)
-         (let [v (get m k)]
-           (if (instance? clojure.lang.Delay v)
-             @v
-             v))
-         default-value))
+    (if (contains? m k)
+      (let [v (get m k)]
+        (if (instance? clojure.lang.Delay v)
+          @v
+          v))
+      default-value))
   (assoc [_ k v]
-         (RecordMap. (assoc m k v) mta))
+    (RecordMap. (assoc m k v) mta))
   (dissoc [_ k]
-          (RecordMap. (dissoc m k) mta))
+    (RecordMap. (dissoc m k) mta))
   (keys [_]
-        (keys m))
+    (keys m))
   (meta [_]
-        mta)
+    mta)
   (with-meta [_ mta]
     (RecordMap. m mta)))
 

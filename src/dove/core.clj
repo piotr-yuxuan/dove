@@ -1,5 +1,9 @@
 (ns dove.core
-  "Avro schema are constant, spec are designed to be constant. As a result, side effects are acceptable in protocol ToSpec. `assert` is used more than usual. Wherever an inconsistent state is detected, it's prefered to raise a argsual error message rather than unclear exception or worse: an erroneous output."
+  "Avro schema are constant, spec are designed to be constant. As a
+  result, side effects are acceptable in protocol ToSpec. `assert` is
+  used more than usual. Wherever an inconsistent state is detected,
+  it's prefered to raise a argsual error message rather than unclear
+  exception or worse: an erroneous output."
   (:require [clojure.spec.alpha :as s]
             [clojure.test.check.generators :as test.g]
             [clj-time.coerce :as tc]
@@ -12,10 +16,9 @@
 (def dove-spec-keyword
   :dove.spec/name)
 
-dove.IPv4
-
 (def convenient-args
-  "These args are not meant to be your default choice, but they are somehow convenient to use."
+  "These args are not meant to be your default choice, but they are
+  somehow convenient to use."
   {:hide-schema-name? false
    :dry-run? false
    :ns-keys? false
@@ -24,17 +27,22 @@ dove.IPv4
    :dove.spec/keyword dove-spec-keyword})
 
 (def ignored-specs
-  "Spec not to be infered. Useful if you want to use some custom specs. Used by to-spec! to keep track of specs and register a spec only once."
+  "Spec not to be infered. Useful if you want to use some custom
+  specs. Used by to-spec! to keep track of specs and register a spec
+  only once."
   (atom #{}))
 
 (defprotocol ToSpec
-  (to-spec! [this args] "Recursively infer and register spec of record-schema and any nested schemas."))
+  (to-spec! [this args] "Recursively infer and register spec of
+  record-schema and any nested schemas."))
 
 (defprotocol MapQualifier
-  (-qualify-map [schema args] "Recursively qualify keys of a map to match some schema namespace."))
+  (-qualify-map [schema args] "Recursively qualify keys of a map to
+  match some schema namespace."))
 
 (def ->avro-fixed?
-  "Sequence of 8-bit unsigned bytes. Returns a singleton of the given size."
+  "Sequence of 8-bit unsigned bytes. Returns a singleton of the given
+  size."
   (memoize
     (fn [fixed-size]
       (s/with-gen
@@ -46,7 +54,10 @@ dove.IPv4
   int?)
 
 (def avro-logical-date?
-  "Represents a date within the calendar, with no reference to a particular time zone or time of day. Annotates an Avro int, where the int stores the number of days from the unix epoch, 1 January 1970 (ISO calendar). "
+  "Represents a date within the calendar, with no reference to a
+  particular time zone or time of day. Annotates an Avro int, where
+  the int stores the number of days from the unix epoch, 1 January
+  1970 (ISO calendar). "
   (s/with-gen
     #(instance? LocalDate %)
     (fn [] (test.g/fmap
@@ -64,7 +75,11 @@ dove.IPv4
                         :max Long/MAX_VALUE}))))
 
 (def avro-logical-timestamp-millis?
-  "Represents an instant on the global timeline, independent of a particular time zone or calendar, with a precision of one millisecond. Annotates an Avro long, where the long stores the number of milliseconds from the unix epoch, 1 January 1970 00:00:00.000 UTC.\n"
+  "Represents an instant on the global timeline, independent of a
+  particular time zone or calendar, with a precision of one
+  millisecond. Annotates an Avro long, where the long stores the
+  number of milliseconds from the unix epoch, 1 January 1970
+  00:00:00.000 UTC.\n"
   (s/with-gen
     #(instance? DateTime %)
     #(test.g/fmap
@@ -388,7 +403,9 @@ dove.IPv4
     (-> args :value)))
 
 (defn qualify-map
-  "Recursively qualify keys of a map to match some schema namespace. Example dumb `explicit-union-types`:
+  "Recursively qualify keys of a map to match some schema
+  namespace. Example dumb `explicit-union-types`:
+
   ``` clojure
   (fn [possible-types path value]
     (if value
