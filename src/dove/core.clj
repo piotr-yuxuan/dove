@@ -10,8 +10,7 @@
             [camel-snake-kebab.extras :as case.e])
   (:import (org.apache.avro Schema$Field Schema$EnumSchema Schema$NullSchema Schema$BooleanSchema Schema$DoubleSchema Schema$FloatSchema Schema$LongSchema Schema$IntSchema Schema$BytesSchema Schema$StringSchema Schema$FixedSchema Schema$RecordSchema Schema$UnionSchema Schema$MapSchema Schema$ArraySchema LogicalTypes$Date LogicalTypes$TimestampMillis Schema$Type)
            (java.time LocalDate)
-           (org.joda.time DateTime)
-           (dove IPv4)))
+           (org.joda.time DateTime)))
 
 (def dove-spec-keyword
   :dove.spec/name)
@@ -70,7 +69,8 @@
     #(instance? Long %)
     #(test.g/fmap
        long
-       (test.g/double* {:NaN? false
+       (test.g/double* {:infinite? false
+                        :NaN? false
                         :min Long/MIN_VALUE
                         :max Long/MAX_VALUE}))))
 
@@ -89,20 +89,26 @@
 (def avro-float?
   "Imprecise. Single precision (32-bit) IEEE 754 floating-point number"
   (s/with-gen
-    #(instance? Float %)
+    #(and (instance? Float %)
+          (not (Float/isNaN %))
+          (Float/isFinite %))
     #(test.g/fmap
        float
-       (test.g/double* {:NaN? false
+       (test.g/double* {:infinite? false
+                        :NaN? false
                         :min Float/MIN_VALUE
                         :max Float/MAX_VALUE}))))
 
 (def avro-double?
   "Imprecise. Double precision (64-bit) IEEE 754 floating-point number"
   (s/with-gen
-    #(instance? Double %)
+    #(and (instance? Double %)
+          (not (Double/isNaN %))
+          (Double/isFinite %))
     #(test.g/fmap
        double
-       (test.g/double* {:NaN? false
+       (test.g/double* {:infinite? false
+                        :NaN? false
                         :min Double/MIN_VALUE
                         :max Double/MAX_VALUE}))))
 
