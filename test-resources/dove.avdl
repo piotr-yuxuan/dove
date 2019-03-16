@@ -2,7 +2,45 @@
 
 protocol Messages {
 
-  fixed UID(16);
+  record PrimitiveTypes {
+    null aNull;
+    boolean aBoolean;
+    int aInt;
+    long aLong;
+    float aFloat;
+    double aDouble;
+    bytes aBytes;
+    string aString;
+  }
+
+  record EmptyRecord {}
+
+  record ParentRecord {
+    PrimitiveTypes child;
+  }
+
+  enum SomeEnum {
+    ONE, Two, three
+  }
+
+  fixed Fixed8(8);
+  fixed Fixed16(16);
+
+  record ArrayRecord {
+    array<null> arrayNull;
+    array<boolean> arrayBoolean;
+    array<int> arrayInt;
+    array<long> arrayLong;
+    array<float> arrayFloat;
+    array<double> arrayDouble;
+    array<bytes> arrayBytes;
+    array<string> arrayString;
+    array<SomeEnum> arraySomeEnum;
+    array<EmptyRecord> arrayEmptyRecord;
+    array<ParentRecord> arrayParentRecord;
+    array<Fixed8> arrayFixed8;
+  }
+
   fixed IPv4(4);
   fixed IPv6(16);
 
@@ -15,6 +53,7 @@ protocol Messages {
     int myInt;
     int myDefaultInt = 2;
     boolean myBoolean;
+    bytes a;
     union { int, null, boolean } weirdUnion= 1;
     map<int> ids = {};
     union { null, array<NestedSchema> } arrayUnion = null;
