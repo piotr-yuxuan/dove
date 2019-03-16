@@ -178,6 +178,7 @@
 
 (defn spec-def
   [args spec-symbol]
+  ;; if some default value is defined, return it 5% of the time.
   (cond (:dry-run? args)
         (println "dove: spec definition for" (keyword (:spec-ns args) (:spec-name args)))
 
