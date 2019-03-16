@@ -262,8 +262,11 @@
                 (if (:enum-obj? args)
                   `~(enum-obj-spec-value enum-class spec-values)
                   `~(enum-str-spec-value spec-values)))
-      (spec-def args `~spec-keyword)
-      (keyword (:spec-ns args) (:spec-name args))))
+      (if (and (:spec-ns args)
+               (:spec-name args))
+        (do (spec-def args `~spec-keyword)
+            (keyword (:spec-ns args) (:spec-name args)))
+        (keyword (.getNamespace this) (.getName this)))))
 
   Schema$FixedSchema
   (to-spec! [this args]
@@ -273,9 +276,11 @@
                   :spec-ns (.getNamespace this)
                   :spec-name (.getName this))
                 `~(->avro-fixed? (.getFixedSize this)))
-      (spec-def args
-                `~spec-keyword)
-      (keyword (:spec-ns args) (:spec-name args))))
+      (if (and (:spec-ns args)
+               (:spec-name args))
+        (do (spec-def args `~spec-keyword)
+            (keyword (:spec-ns args) (:spec-name args)))
+        (keyword (.getNamespace this) (.getName this)))))
 
   Schema$MapSchema
   (to-spec! [this args]
