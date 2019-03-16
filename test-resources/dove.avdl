@@ -37,8 +37,61 @@ protocol Messages {
     array<string> arrayString;
     array<SomeEnum> arraySomeEnum;
     array<EmptyRecord> arrayEmptyRecord;
-    array<ParentRecord> arrayParentRecord;
     array<Fixed8> arrayFixed8;
+  }
+
+  record MapRecord {
+    map<null> mapNull;
+    map<boolean> mapBoolean;
+    map<int> mapInt;
+    map<long> mapLong;
+    map<float> mapFloat;
+    map<double> mapDouble;
+    map<bytes> mapBytes;
+    map<string> mapString;
+    map<SomeEnum> mapSomeEnum;
+    map<EmptyRecord> mapEmptyRecord;
+    map<Fixed8> mapFixed8;
+  }
+
+  enum CardSuit {
+    CLUB, DIAMOND, HEART, SPADE
+  }
+
+  record UnionRecord {
+    union { null, boolean } nullBoolean;
+    union { boolean, int } booleanInt;
+    union { int, bytes } intBytes;
+    union { string, long } stringLong;
+    union { SomeEnum, double } someEnumDouble;
+    union { Fixed8, float } fixed8Float;
+    union { ParentRecord, EmptyRecord } parentRecordEmptyRecord;
+    union { null, SomeEnum, CardSuit, Fixed8, Fixed16, int } nullSomeEnumCardSuitFixed8Fixed16Int;
+  }
+
+  record UnionRecordDefault {
+    union { null, boolean } nullBoolean = null;
+    union { boolean, null } booleanNull = false;
+    union { boolean, int } booleanInt = true;
+    union { int, boolean } intBoolean = 0;
+    union { int, bytes } intBytes = 1;
+    union { bytes, int } bytesInt = "\uCAFE";
+    union { string, long } stringLong = "";
+    union { long, string } longString = 2.3;
+    union { SomeEnum, double } someEnumDouble = "ONE";
+    union { double, SomeEnum } doubleSomeEnum = 4.5;
+    union { Fixed8, float } fixed8Float = "\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE";
+    union { float, Fixed8 } floatFixed8 = 6.7;
+
+    union { ParentRecord, EmptyRecord } parentRecordEmptyRecord;
+    union { EmptyRecord, ParentRecord } emptyRecordParentRecord = {};
+
+    union { null, SomeEnum, CardSuit, Fixed8, Fixed16, int } nullSomeEnumCardSuitFixed8Fixed16Int = null;
+    union { SomeEnum, CardSuit, Fixed8, Fixed16, int, null } someEnumCardSuitFixed8Fixed16IntNull = "Two";
+    union { CardSuit, Fixed8, Fixed16, int, null, SomeEnum } cardSuitfixed8Fixed16IntNullSomeEnum = "DIAMOND";
+    union { Fixed8, Fixed16, int, null, SomeEnum, CardSuit } fixed8Fixed16IntNullSomeEnumCardSuit;
+    union { Fixed16, int, null, SomeEnum, CardSuit, Fixed8 } fixed16IntNullSomeEnumCardSuitFixed8 = "\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE";
+    union { int, null, SomeEnum, CardSuit, Fixed8, Fixed16 } intNullSomeEnumCardSuitFixed8Fixed16 = 8;
   }
 
   fixed IPv4(4);
