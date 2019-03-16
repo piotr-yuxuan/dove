@@ -1,65 +1,82 @@
 (ns dove.core-test
   (:require [clojure.test :refer :all]
-            [dove.core :as dove])
-  (:use [potemkin.collections])
-  (:import (dove IPv6 IPv4)))
+            [dove.core :as dove]
+            [clojure.spec.alpha :as s]
+            [clojure.spec.gen.alpha :as gen])
+  (:import (dove PrimitiveTypes
+                 EmptyRecord
+                 ParentRecord
+                 SomeEnum
+                 Fixed8
+                 Fixed16
+                 ArrayRecord)
+           (java.nio ByteBuffer)))
 
-(IPv6/getClassSchema)
+(deftest avro-float?
+  (is (not (s/valid? dove/avro-float? Float/POSITIVE_INFINITY)))
+  (is (not (s/valid? dove/avro-float? Float/NaN)))
+  (is (not (s/valid? dove/avro-float? Float/NEGATIVE_INFINITY))))
 
-(dove/to-spec! (IPv4/getClassSchema) dove/convenient-args)
-
-(def-map-type
-  RecordMap [m mta]
-  (get [_ k default-value]
-    (if (contains? m k)
-      (let [v (get m k)]
-        (if (instance? clojure.lang.Delay v)
-          @v
-          v))
-      default-value))
-  (assoc [_ k v]
-    (RecordMap. (assoc m k v) mta))
-  (dissoc [_ k]
-    (RecordMap. (dissoc m k) mta))
-  (keys [_]
-    (keys m))
-  (meta [_]
-    mta)
-  (with-meta [_ mta]
-    (RecordMap. m mta)))
-
-(def s (->RecordMap {:a 1 :b 2 :c 3} nil))
-(type (into {} s))
+(deftest avro-double?
+  (is (not (s/valid? dove/avro-double? Double/POSITIVE_INFINITY)))
+  (is (not (s/valid? dove/avro-double? Double/NaN)))
+  (is (not (s/valid? dove/avro-double? Double/NEGATIVE_INFINITY))))
 
 (deftest specification-test
+  (reset! dove/ignored-specs #{})
   (testing "primitive types"
-    (testing "null")
-    (testing "boolean")
-    (testing "int")
-    (testing "long")
-    (testing "float")
-    (testing "double"
-      ;; in sich types, check infinity isn't a valid value
-      )
-    (testing "bytes")
-    (testing "string"
-      ;; unicode character sequence
-      ))
+    (dove/to-spec! (PrimitiveTypes/getClassSchema) dove/convenient-args)
+    (dotimes [_ 1e3]
+      (let [sample (gen/generate (s/gen :dove/PrimitiveTypes))]
+        (testing "null"
+          (is (nil? (:aNull sample))))
+        (testing "boolean"
+          (is (boolean? (:aBoolean sample))))
+        (testing "int"
+          (is (int? (:aInt sample)))
+          (is (s/valid? dove/avro-int? (:aInt sample))))
+        (testing "long"
+          (is (instance? Long (:aLong sample)))
+          (is (s/valid? dove/avro-long? (:aLong sample))))
+        (testing "float"
+          (is (float? (:aFloat sample)))
+          (is (s/valid? dove/avro-float? (:aFloat sample))))
+        (testing "double"
+          (is (double? (:aDouble sample)))
+          (is (s/valid? dove/avro-double? (:aDouble sample))))
+        (testing "bytes"
+          (is (bytes? (:aBytes sample))))
+        (testing "string"
+          (is (string? (:aString sample)))))))
   (testing "complex types"
     (testing "records"
-      ;; test empty record schema generates empty map
-      ;; nested records
+      (dove/to-spec! (EmptyRecord/getClassSchema) dove/convenient-args)
+      (is (= {} (dissoc (gen/generate (s/gen :dove/EmptyRecord)) (:dove.spec/keyword dove/convenient-args))))
+      (dove/to-spec! (ParentRecord/getClassSchema) dove/convenient-args)
+      (is (contains? (gen/generate (s/gen :dove/ParentRecord)) :child))
+      ;; recursive records can generate memory overflow
       )
-    (testing "enums")
-    (testing "arrays")
+    (testing "enums"
+      (dove/to-spec! (SomeEnum/getClassSchema) {:enum-obj? true})
+      (is (instance? SomeEnum (gen/generate (s/gen :dove/SomeEnum)))))
+    (testing "arrays"
+      (dove/to-spec! (ArrayRecord/getClassSchema) dove/convenient-args)
+      (let [sample (gen/generate (s/gen :dove/ArrayRecord))]
+        sample))
     (testing "maps"
       ;; Map keys are assumed to be strings.
       ;; an optional parameter (relax-map-str-keys? default: false) could relax and accept str-compatible keys.
       )
     (testing "unions")
-    (testing "fixed")
-    ;; size
-    )
+    (testing "fixed"
+      (dove/to-spec! (Fixed8/getClassSchema) dove/convenient-args)
+      (let [fixed-8 (gen/generate (s/gen :dove/Fixed8))]
+        (is (bytes? fixed-8))
+        (is (= 8 (.limit (ByteBuffer/wrap fixed-8)))))
+      (dove/to-spec! (Fixed16/getClassSchema) dove/convenient-args)
+      (let [fixed-16 (gen/generate (s/gen :dove/Fixed16))]
+        (is (bytes? fixed-16))
+        (is (= 16 (.limit (ByteBuffer/wrap fixed-16)))))))
   (testing "named types"
     ;; checking types have correct kw.
     (testing "record")
