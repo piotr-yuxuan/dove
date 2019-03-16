@@ -7,7 +7,6 @@
  :paths ["src" "test" "target/classes" "target/classes/dove"]
  :mvn/repos {"io.confluent" {:url "https://packages.confluent.io/maven/"}}
  :deps {camel-snake-kebab {:mvn/version "0.4.0"}
-        potemkin {:mvn/version "0.4.5"}
         org.clojure/clojure {:mvn/version "1.10.0"}
         org.clojure/spec.alpha {:mvn/version "0.2.176"}
         org.clojure/test.check {:mvn/version "0.10.0-alpha3"}
