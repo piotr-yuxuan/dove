@@ -79,3 +79,13 @@ suit your needs better than dove. Each of them is pretty impressive!
 - [[https://github.com/deercreeklabs/lancaster][lancaster]] from [[https://github.com/chadharrington][Chad Harrington]]
 - [[https://github.com/metosin/spec-tools][spec-tools]] from [[https://github.com/ikitommi][Tommi Reiman]]
 - [[https://github.com/stathissideris/spec-provider][spec-provider]] from [[https://github.com/stathissideris][Stathis Sideris]]
+
+* Draft
+
+This project setting configures everything for a REPL, it should have different settings for the production build and the dev setup.
+
+#+BEGIN_SRC zsh
+$ mvn clean generate-sources compile
+# This can be simplified: 
+$ mvn compile
+#+END_SRC
