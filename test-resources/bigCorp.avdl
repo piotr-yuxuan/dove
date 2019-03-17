@@ -1,0 +1,31 @@
+// Namespace as Java-like package name
+@namespace("com.bigCorp")
+
+protocol Messages {
+
+  /** Unique identifier. Will be cast to a UUID. */
+  fixed UID(16);
+
+  /** Category of a product. A product can only have zero of one category. */
+  enum Category {
+    FASHION, VEGETABLES, BEAUTY, SPORTSWEAR
+  }
+
+  /** Description of a product. Only fields `id` and `retailPrice` are required. */
+  record Product {
+    /** Identifier of this product. Will be cast to a UUID. */
+    UID id;
+
+    /** What a customer must pay to get one item. Gross profit for each sold product. */
+    decimal(8,1) retailPrice;
+
+    /** If known, count of available items of this product from our big warehouse. */
+    union { null, int } warehouseCount = null;
+
+    /** Ids of all the variants of this product family, including this very product id. */
+    array<UID> familyVariants = [];
+
+    /** Category of this product, if relevant */
+    union { null, Category } category = null;
+  }
+}

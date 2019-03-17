@@ -13,7 +13,8 @@
  :aliases {:pom {:extra-deps {org.apache.avro/avro-maven-plugin {:mvn/version "1.8.2"}}}
            :dev {:extra-deps {org.apache.avro/avro-maven-plugin {:mvn/version "1.8.2"}
                               org.clojure/test.check {:mvn/version "0.10.0-alpha3"}
-                              org.clojure/spec.alpha {:mvn/version "0.2.176"}}
+                              org.clojure/spec.alpha {:mvn/version "0.2.176"}
+                              danlentz/clj-uuid {:mvn/version "0.1.7"}}
                  :extra-paths ["test" "target/classes" "target/classes/dove"]}
            :test {:main-opts ["-m" "cognitect.test-runner"
                               "-d" "test"]
