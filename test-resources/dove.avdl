@@ -89,7 +89,7 @@ protocol Messages {
     union { null, SomeEnum, CardSuit, Fixed8, Fixed16, int } nullSomeEnumCardSuitFixed8Fixed16Int = null;
     union { SomeEnum, CardSuit, Fixed8, Fixed16, int, null } someEnumCardSuitFixed8Fixed16IntNull = "Two";
     union { CardSuit, Fixed8, Fixed16, int, null, SomeEnum } cardSuitfixed8Fixed16IntNullSomeEnum = "DIAMOND";
-    union { Fixed8, Fixed16, int, null, SomeEnum, CardSuit } fixed8Fixed16IntNullSomeEnumCardSuit;
+    union { Fixed8, Fixed16, int, null, SomeEnum, CardSuit } fixed8Fixed16IntNullSomeEnumCardSuit = "\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE";
     union { Fixed16, int, null, SomeEnum, CardSuit, Fixed8 } fixed16IntNullSomeEnumCardSuitFixed8 = "\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE\uCAFE";
     union { int, null, SomeEnum, CardSuit, Fixed8, Fixed16 } intNullSomeEnumCardSuitFixed8Fixed16 = 8;
   }
