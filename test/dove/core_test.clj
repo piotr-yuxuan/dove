@@ -65,7 +65,7 @@
           (is (string? (:aString sample))))))
     (testing "complex types"
       (testing "records"
-        (dove/to-spec! (EmptyRecord/getClassSchema) {:hide-schema-name? true})
+        (dove/to-spec! (EmptyRecord/getClassSchema) {})
         (is (= {} (gen/generate (s/gen :dove/EmptyRecord))))
         (dove/to-spec! (ParentRecord/getClassSchema) dove/convenient-args)
         (is (contains? (gen/generate (s/gen :dove/ParentRecord)) :child))
@@ -75,7 +75,7 @@
         (dove/to-spec! (SomeEnum/getClassSchema) {:enum-obj? true})
         (is (instance? SomeEnum (gen/generate (s/gen :dove/SomeEnum)))))
       (testing "arrays"
-        (dove/to-spec! (ArrayRecord/getClassSchema) {:enum-obj? true :hide-schema-name? true})
+        (dove/to-spec! (ArrayRecord/getClassSchema) {:enum-obj? true})
         (let [sample (gen/generate (s/gen :dove/ArrayRecord))]
           (is (every? nil? (:arrayNull sample)))
           (is (every? boolean? (:arrayBoolean sample)))
@@ -91,7 +91,7 @@
       (testing "maps"
         ;; Map keys are assumed to be strings.
         ;; an optional parameter (str-keys? default: false) could relax and accept str-incompatible keys.
-        (dove/to-spec! (MapRecord/getClassSchema) {:enum-obj? true :hide-schema-name? true})
+        (dove/to-spec! (MapRecord/getClassSchema) {:enum-obj? true})
         (let [sample (gen/generate (s/gen :dove/MapRecord))]
           (is (s/valid? (s/map-of string? nil?) (:mapNull (gen/generate (s/gen :dove/MapRecord)))))
           (is (s/valid? (s/map-of string? boolean?) (:mapBoolean (gen/generate (s/gen :dove/MapRecord)))))

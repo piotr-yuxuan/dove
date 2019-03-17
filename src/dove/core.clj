@@ -21,8 +21,7 @@
 (def convenient-args
   "These args are not meant to be your default choice, but they are
   somehow convenient to use."
-  {:hide-schema-name? false ;; TODO aggregate arg with :dove.spec/keyword
-   :dry-run? false
+  {:dry-run? false
    :ns-keys? false
    :enum-obj? false
    :required-union-nil-value? false
@@ -221,10 +220,8 @@
   (memoize
     (fn [args spec-keys]
       (let [spec-name (keyword (:spec-ns args) (:spec-name args))]
-        (if (:hide-schema-name? args)
-          `(s/keys
-             ~(if (:ns-keys? args) :req :req-un) [~@(:required spec-keys)]
-             ~(if (:ns-keys? args) :opt :opt-un) [~@(:optional spec-keys)])
+        (if (and (contains? args :dove.spec/keyword)
+                 (keyword? (:dove.spec/keyword args)))
           `(s/with-gen
              (s/keys
                ~(if (:ns-keys? args) :req :req-un) [~@(:required spec-keys)]
@@ -232,11 +229,14 @@
              #(test.g/fmap
                 (fn [value#]
                   (assoc value#
-                    ~(:dove.spec/keyword args dove-spec-keyword) ~spec-name))
+                    ~(:dove.spec/keyword args) ~spec-name))
                 (s/gen
                   (s/keys
                     ~(if (:ns-keys? args) :req :req-un) [~@(:required spec-keys)]
-                    ~(if (:ns-keys? args) :opt :opt-un) [~@(:optional spec-keys)])))))))))
+                    ~(if (:ns-keys? args) :opt :opt-un) [~@(:optional spec-keys)]))))
+          `(s/keys
+             ~(if (:ns-keys? args) :req :req-un) [~@(:required spec-keys)]
+             ~(if (:ns-keys? args) :opt :opt-un) [~@(:optional spec-keys)]))))))
 
 (defn hierarchy-derive
   [parent descendant]
