@@ -11,9 +11,8 @@
             [clojure.test.check.generators :as test.g]
             [clj-time.coerce :as tc]
             [camel-snake-kebab.extras :as case.e])
-  (:import (org.apache.avro Schema$Field Schema$EnumSchema Schema$NullSchema Schema$BooleanSchema Schema$DoubleSchema Schema$FloatSchema Schema$LongSchema Schema$IntSchema Schema$BytesSchema Schema$StringSchema Schema$FixedSchema Schema$RecordSchema Schema$UnionSchema Schema$MapSchema Schema$ArraySchema LogicalTypes$Date LogicalTypes$TimestampMillis Schema$Type)
-           (java.time LocalDate)
-           (org.joda.time DateTime)
+  (:import (org.apache.avro Schema$Field Schema$EnumSchema Schema$NullSchema Schema$BooleanSchema Schema$DoubleSchema Schema$FloatSchema Schema$LongSchema Schema$IntSchema Schema$BytesSchema Schema$StringSchema Schema$FixedSchema Schema$RecordSchema Schema$UnionSchema Schema$MapSchema Schema$ArraySchema LogicalTypes$Date LogicalTypes$TimestampMillis Schema$Type LogicalTypes$TimeMicros LogicalTypes$TimestampMicros LogicalTypes$TimeMillis LogicalTypes$Decimal)
+           (org.joda.time DateTime LocalDate)
            (java.nio ByteBuffer)))
 
 (def dove-spec-keyword
@@ -22,7 +21,7 @@
 (def convenient-args
   "These args are not meant to be your default choice, but they are
   somehow convenient to use."
-  {:hide-schema-name? false
+  {:hide-schema-name? false ;; TODO aggregate arg with :dove.spec/keyword
    :dry-run? false
    :ns-keys? false
    :enum-obj? false
@@ -57,17 +56,6 @@
   "Int: 32-bit signed two's complement integer"
   int?)
 
-(def avro-logical-date?
-  "Represents a date within the calendar, with no reference to a
-  particular time zone or time of day. Annotates an Avro int, where
-  the int stores the number of days from the unix epoch, 1 January
-  1970 (ISO calendar). "
-  (s/with-gen
-    #(instance? LocalDate %)
-    (fn [] (test.g/fmap
-             #(LocalDate/ofEpochDay %)
-             (s/gen avro-int?)))))
-
 (def avro-long?
   "Long: 64-bit signed integer"
   (s/with-gen
@@ -78,18 +66,6 @@
                         :NaN? false
                         :min Long/MIN_VALUE
                         :max Long/MAX_VALUE}))))
-
-(def avro-logical-timestamp-millis?
-  "Represents an instant on the global timeline, independent of a
-  particular time zone or calendar, with a precision of one
-  millisecond. Annotates an Avro long, where the long stores the
-  number of milliseconds from the unix epoch, 1 January 1970
-  00:00:00.000 UTC.\n"
-  (s/with-gen
-    #(instance? DateTime %)
-    #(test.g/fmap
-       tc/from-long
-       (s/gen avro-long?))))
 
 (def avro-float?
   "Imprecise. Single precision (32-bit) IEEE 754 floating-point number"
@@ -116,6 +92,95 @@
                         :NaN? false
                         :min Double/MIN_VALUE
                         :max Double/MAX_VALUE}))))
+
+(defn ->avro-logical-decimal?
+  "Represents an arbitrary-precision signed decimal number of the form
+  precision × 10-scale. Annotates Avro bytes or fixed types.
+  Represented with a `java.math.BigDecimal` in generated Java
+  sources."
+  [precision scale]
+  (assert (<= scale precision) (format "Invalid decimal scale: %s (greater than precision: %s)" scale precision))
+  (s/with-gen
+    #(instance? BigDecimal %)
+    (fn []
+      (test.g/fmap
+        #(BigDecimal/valueOf % scale)
+        (test.g/large-integer* {:min 0
+                                :max (dec (Math/pow 10 precision))})))))
+
+(def epoch
+  (clj-time.core/epoch))
+
+(def avro-logical-date?
+  "Represents a date within the calendar, with no reference to a
+  particular time zone or time of day. Annotates an Avro int, where
+  the int stores the number of days from the unix epoch, 1 January
+  1970 (ISO calendar). Represented with `org.joda.time.LocalDate` in
+  generated Java sources."
+  (s/with-gen
+    #(instance? LocalDate %)
+    (fn [] (test.g/fmap
+             #(->> (clj-time.core/days %)
+                   (clj-time.core/plus epoch)
+                   (clj-time.coerce/to-local-date))
+             (s/gen int?)))))
+
+(def avro-logical-time-millis?
+  "Represents a time of day, with no reference to a particular calendar,
+  time zone or date, with a precision of one millisecond. Annotates an
+  Avro int, where the int stores the number of milliseconds after
+  midnight, 00:00:00.000. Represented with `org.joda.time.LocalDate`
+  in generated Java sources."
+  (s/with-gen
+    #(instance? LocalDate %)
+    (fn [] (test.g/fmap
+             (comp tc/to-local-date tc/from-long)
+             (s/gen avro-int?)))))
+
+(def avro-logical-time-micros?
+  "Represents a time of day, with no reference to a particular calendar,
+  time zone or date, with a precision of one microsecond.  Annotates
+  an Avro long, where the long stores the number of microseconds after
+  midnight, 00:00:00.000000.  Represented with primitive `long` in
+  generated Java sources."
+  avro-long?)
+
+(def avro-logical-timestamp-millis?
+  "Represents an instant on the global timeline, independent of a
+  particular time zone or calendar, with a precision of one
+  millisecond. Annotates an Avro long, where the long stores the
+  number of milliseconds from the unix epoch, 1 January 1970
+  00:00:00.000 UTC. Represented with `org.joda.time.DateTime` in
+  generated Java sources."
+  (s/with-gen
+    #(instance? DateTime %)
+    #(test.g/fmap
+       tc/from-long
+       (s/gen avro-long?))))
+
+(def avro-logical-timestamp-micros?
+  "Represents an instant on the global timeline, independent of a
+  particular time zone or calendar, with a precision of one
+  microsecond. Annotates an Avro long, where the long stores the
+  number of microseconds from the unix epoch, 1 January 1970
+  00:00:00.000000 UTC. Represented with primitive `long` generated
+  Java sources."
+  avro-long?)
+
+(def avro-logical-duration?
+  "Represents an amount of time defined by a number of months, days and
+  milliseconds. This is not equivalent to a number of milliseconds,
+  because, depending on the moment in time from which the duration is
+  measured, the number of days in the month and number of milliseconds
+  in a day may differ. Other standard periods such as years, quarters,
+  hours and minutes can be expressed through these basic
+  periods. Annotates Avro fixed type of size 12, which stores three
+  little-endian unsigned integers that represent durations at
+  different granularities of time. The first stores a number in
+  months, the second stores a number in days, and the third stores a
+  number in milliseconds. Represented with custom named type
+  `fixed(12)` in generated Java sources."
+  (->avro-fixed? 12))
 
 (def enum-obj-spec-value
   (memoize
@@ -219,20 +284,25 @@
 
   Schema$BytesSchema
   (to-spec! [this args]
-    (spec-def args `bytes?)
+    (let [logical-type (.getLogicalType this)]
+      (cond (instance? LogicalTypes$Decimal logical-type) (spec-def args `~(->avro-logical-decimal? (.getPrecision ^LogicalTypes$Decimal logical-type) (.getScale ^LogicalTypes$Decimal logical-type)))
+            :default (spec-def args `bytes?)))
     (keyword (:spec-ns args) (:spec-name args)))
 
   Schema$IntSchema
   (to-spec! [this args]
     (let [logical-type (.getLogicalType this)]
       (cond (instance? LogicalTypes$Date logical-type) (spec-def args `avro-logical-date?)
+            (instance? LogicalTypes$TimeMillis logical-type) (spec-def args `avro-logical-time-millis?)
             :default (spec-def args `avro-int?)))
     (keyword (:spec-ns args) (:spec-name args)))
 
   Schema$LongSchema
   (to-spec! [this args]
     (let [logical-type (.getLogicalType this)]
-      (cond (instance? LogicalTypes$TimestampMillis logical-type) (spec-def args `avro-logical-timestamp-millis?)
+      (cond (instance? LogicalTypes$TimeMicros logical-type) (spec-def args `avro-logical-time-micros?)
+            (instance? LogicalTypes$TimestampMillis logical-type) (spec-def args `avro-logical-timestamp-millis?)
+            (instance? LogicalTypes$TimestampMicros logical-type) (spec-def args `avro-logical-timestamp-micros?)
             :default (spec-def args `avro-long?)))
     (keyword (:spec-ns args) (:spec-name args)))
 
@@ -277,11 +347,16 @@
   Schema$FixedSchema
   (to-spec! [this args]
     (let [spec-keyword (keyword (.getNamespace this)
-                                (.getName this))]
-      (spec-def (assoc args
-                  :spec-ns (.getNamespace this)
-                  :spec-name (.getName this))
-                `~(->avro-fixed? (.getFixedSize this)))
+                                (.getName this))
+          logical-type (.getLogicalType this)]
+      (cond (instance? LogicalTypes$Decimal logical-type) (spec-def args `~(->avro-logical-decimal? (.getPrecision ^LogicalTypes$Decimal logical-type) (.getScale ^LogicalTypes$Decimal logical-type)))
+            ;; FIXME AVRO BUG: duration fixed(12) should be supported
+            ;; here, but is unknown to package
+            ;; org.apache.avro/LogicalTypes. Meh.
+            :default (spec-def (assoc args
+                                 :spec-ns (.getNamespace this)
+                                 :spec-name (.getName this))
+                               `~(->avro-fixed? (.getFixedSize this))))
       (if (and (:spec-ns args)
                (:spec-name args))
         (do (spec-def args `~spec-keyword)

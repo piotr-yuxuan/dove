@@ -14,8 +14,12 @@
                  ArrayRecord
                  MapRecord
                  CardSuit
-                 UnionRecord)
-           (java.nio ByteBuffer)))
+                 duration
+                 UnionRecord
+                 LogicalTypes)
+           (java.nio ByteBuffer)
+           (org.joda.time LocalDate DateTime)
+           (org.apache.avro Schema$FixedSchema)))
 
 (deftest avro-float?
   (is (not (s/valid? dove/avro-float? Float/POSITIVE_INFINITY)))
@@ -138,22 +142,53 @@
       ;; accept alias enum names
       ;; accept alias fixed names
       )
-    (testing "logical types"
-      (testing "decimal"
-        (testing "underlying bytes")
-        (testing "underlying fixed"))
-      (testing "date"
-        (testing "underlying int"))
-      (testing "time-millis"
-        (testing "underlying int"))
-      (testing "time-micros"
-        (testing "underlying long"))
-      (testing "timestamp-millis"
-        (testing "underlying long"))
-      (testing "timestamp-micros"
-        (testing "underlying long"))
-      (testing "duration"
-        (testing "underlying fixed")))))
+
+    Schema$FixedSchema
+    (testing "logical types match generated classes field types"
+      (dove/to-spec! (LogicalTypes/getClassSchema) dove/convenient-args)
+      (def sample (gen/generate (s/gen :dove/LogicalTypes)))
+      (let [sample (gen/generate (s/gen :dove/LogicalTypes))]
+        (testing "decimal"
+          (is (instance? BigDecimal (:aDecimal sample)))
+          (is (s/valid? (dove/->avro-logical-decimal? 8 8) (:aDecimal sample)))
+          (is (instance? BigDecimal (:aDecimal11 sample)))
+          (is (s/valid? (dove/->avro-logical-decimal? 1 1) (:aDecimal11 sample)))
+          (is (instance? BigDecimal (:aDecimal81 sample)))
+          (is (s/valid? (dove/->avro-logical-decimal? 8 1) (:aDecimal81 sample)))
+          (testing "underlying bytes")
+          (testing "underlying fixed"))
+        (testing "date"
+          (is (instance? LocalDate (:aDate sample)))
+          (is (s/valid? dove/avro-logical-date? (:aDate sample)))
+          (testing "underlying int"
+            (is (instance? LocalDate (:aDateInt sample)))
+            (is (s/valid? dove/avro-logical-date? (:aDateInt sample)))))
+        (testing "time-millis"
+          (is (instance? LocalDate (:aTimeMillis sample)))
+          (is (s/valid? dove/avro-logical-time-millis? (:aTimeMillis sample)))
+          (testing "underlying int"
+            (is (instance? LocalDate (:aTimeMillisInt sample)))
+            (is (s/valid? dove/avro-logical-time-millis? (:aTimeMillisInt sample)))))
+        (testing "time-micros"
+          (testing "underlying long"
+            (is (instance? Long (:aTimeMicrosLong sample)))
+            (is (s/valid? dove/avro-logical-time-micros? (:aTimeMicrosLong sample)))))
+        (testing "timestamp-millis"
+          (is (instance? DateTime (:aTimestampMillis sample)))
+          (is (s/valid? dove/avro-logical-timestamp-millis? (:aTimestampMillis sample)))
+          (testing "underlying long"
+            (is (instance? DateTime (:aTimestampMillisInt sample)))
+            (is (s/valid? dove/avro-logical-timestamp-millis? (:aTimestampMillisInt sample)))))
+        (testing "timestamp-micros"
+          (testing "underlying long"
+            (is (instance? Long (:aTimestampMicrosLong sample)))
+            (is (s/valid? dove/avro-logical-timestamp-micros? (:aTimestampMicrosLong sample)))))
+        (testing "duration"
+          (testing "underlying fixed"
+            ;; FIXME AVRO BUG: duration fixed(12) should be supported
+            ;; here, but is unknown to package
+            ;; org.apache.avro/LogicalTypes. Meh.
+            (is (s/valid? (dove/->avro-fixed? 12) (:aDurationBytes sample)))))))))
 
 (deftest api-test
   (testing "")
