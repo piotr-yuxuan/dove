@@ -1,7 +1,7 @@
 # 🕊 [dove](https://clojars.org/dove)
 
 - [![Clojars Project](https://img.shields.io/clojars/v/dove.svg)](https://clojars.org/dove)
-- [![cljdoc badge](https://cljdoc.org/badge/dove/dove)](https://cljdoc.org/d/dove/dove/0.0.7-SNAPSHOT)
+- [![cljdoc badge](https://cljdoc.org/badge/dove/dove)](https://cljdoc.org/d/dove/dove)
 
 # What does it do?
 
