@@ -1,6 +1,6 @@
 {:name "dove"
  :description "Recursively infer clojure spec from any (nested) org.apache.avro.Schema"
- :version "0.0.3-SNAPSHOT"
+ :version "0.0.4-SNAPSHOT"
  :license {:name "GNU GPL, version 3, 29 June 2007"
            :url "https://www.gnu.org/licenses/gpl-3.0.txt"
            :addendum "GPL_ADDITION.md"}
