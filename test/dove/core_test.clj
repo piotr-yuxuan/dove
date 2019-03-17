@@ -16,7 +16,10 @@
                  CardSuit
                  duration
                  UnionRecord
-                 LogicalTypes)
+                 LogicalTypes
+                 _cA_se_æÂê胡雨軒Петрº_Enum
+                 _cA_se_æÂê胡雨軒Петрº_Fixed
+                 _cA_se_æÂê胡雨軒Петрº_Schema)
            (java.nio ByteBuffer)
            (org.joda.time LocalDate DateTime)
            (org.apache.avro Schema$FixedSchema)))
@@ -130,11 +133,16 @@
         (dove/to-spec! (Fixed16/getClassSchema) dove/convenient-args)
         (let [fixed-16 (gen/generate (s/gen :dove/Fixed16))]
           (is (s/valid? (dove/->avro-fixed? 16) fixed-16)))))
-    (testing "named types"
-      ;; checking types have correct kw.
-      (testing "record")
-      (testing "enums")
-      (testing "fixed"))
+    (testing "named types and field names"
+      (testing "record"
+        (dove/to-spec! (_cA_se_æÂê胡雨軒Петрº_Schema/getClassSchema) {:ns-keys? true})
+        (is (= '(:dove._cA_se_æÂê胡雨軒Петрº_Schema/_cA_se_æÂê胡雨軒Петрº_field) (keys (gen/generate (s/gen :dove/_cA_se_æÂê胡雨軒Петрº_Schema))))))
+      (testing "enums"
+        (dove/to-spec! (_cA_se_æÂê胡雨軒Петрº_Enum/getClassSchema) {:enum-obj? true})
+        (is (= _cA_se_æÂê胡雨軒Петрº_Enum/_cA_se_æÂê胡雨軒Петрº_ (gen/generate (s/gen :dove/_cA_se_æÂê胡雨軒Петрº_Enum)))))
+      (testing "fixed"
+        (dove/to-spec! (_cA_se_æÂê胡雨軒Петрº_Fixed/getClassSchema) {})
+        (is (s/valid? (dove/->avro-fixed? 1) (gen/generate (s/gen :dove/_cA_se_æÂê胡雨軒Петрº_Fixed))))))
     (testing "aliases"
       ;; use the actual name
       ;; accept alias record names

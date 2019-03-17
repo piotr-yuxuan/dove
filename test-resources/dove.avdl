@@ -121,6 +121,12 @@ protocol Messages {
     @logicalType("duration") duration aDurationBytes;
   }
 
+  enum _cA_se_æÂê胡雨軒Петрº_Enum { _cA_se_æÂê胡雨軒Петрº_ }
+  fixed _cA_se_æÂê胡雨軒Петрº_Fixed(1);
+  record _cA_se_æÂê胡雨軒Петрº_Schema {
+    int _cA_se_æÂê胡雨軒Петрº_field;
+  }
+
   record NestedSchema {
     union { null, IPv4, IPv6 } nestedIp = null;
     union { null, array<NestedSchema> } nestedRecursiveArrayUnion = null;
