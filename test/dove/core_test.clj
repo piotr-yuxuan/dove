@@ -69,11 +69,10 @@
     (testing "complex types"
       (testing "records"
         (dove/to-spec! (EmptyRecord/getClassSchema) {})
+        ;; TODO FIXME recursive records can generate memory overflow
         (is (= {} (gen/generate (s/gen :dove/EmptyRecord))))
         (dove/to-spec! (ParentRecord/getClassSchema) dove/convenient-args)
-        (is (contains? (gen/generate (s/gen :dove/ParentRecord)) :child))
-        ;; recursive records can generate memory overflow
-        )
+        (is (contains? (gen/generate (s/gen :dove/ParentRecord)) :child)))
       (testing "enums"
         (dove/to-spec! (SomeEnum/getClassSchema) {:enum-obj? true})
         (is (instance? SomeEnum (gen/generate (s/gen :dove/SomeEnum)))))
