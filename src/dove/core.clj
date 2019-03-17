@@ -167,7 +167,12 @@
   avro-long?)
 
 (def avro-logical-duration?
-  "Represents an amount of time defined by a number of months, days and
+  "This logical type is supported as is with no overloading of its
+  underlying type. It is currently unknown to package
+  `org.apache.avro/LogicalTypes` so should probably be used with
+  caution. You're alone; good luck.
+
+Represents an amount of time defined by a number of months, days and
   milliseconds. This is not equivalent to a number of milliseconds,
   because, depending on the moment in time from which the duration is
   measured, the number of days in the month and number of milliseconds
