@@ -153,7 +153,6 @@
     Schema$FixedSchema
     (testing "logical types match generated classes field types"
       (dove/to-spec! (LogicalTypes/getClassSchema) dove/convenient-args)
-      (def sample (gen/generate (s/gen :dove/LogicalTypes)))
       (let [sample (gen/generate (s/gen :dove/LogicalTypes))]
         (testing "decimal"
           (is (instance? BigDecimal (:aDecimal sample)))
@@ -195,6 +194,7 @@
             ;; FIXME AVRO BUG: duration fixed(12) should be supported
             ;; here, but is unknown to package
             ;; org.apache.avro/LogicalTypes. Meh.
+            (is (s/valid? dove/avro-logical-duration? (:aDurationBytes sample)))
             (is (s/valid? (dove/->avro-fixed? 12) (:aDurationBytes sample)))))))))
 
 (deftest api-test
