@@ -26,7 +26,7 @@
    :dry-run? false
    :ns-keys? false
    :enum-obj? false
-   :optional-nil? true
+   :required-union-nil-value? false
    :dove.spec/keyword dove-spec-keyword})
 
 (def ignored-specs
@@ -198,7 +198,7 @@
 (def optional-key?
   (memoize
     (fn [field args]
-      (if (and (:optional-nil? args)
+      (if (and (not (:required-union-nil-value? args))
                (->> field
                     .schema
                     .getType
