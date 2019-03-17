@@ -97,6 +97,30 @@ protocol Messages {
   fixed IPv4(4);
   fixed IPv6(16);
 
+  fixed duration(12);
+
+  record LogicalTypes {
+  /** Logical type decimal not tested with fixed or bytes */
+    decimal(1,1) aDecimal11;
+    decimal(8,1) aDecimal81;
+    decimal(8,8) aDecimal;
+
+    date aDate;
+    @logicalType("date") int aDateInt;
+
+    time_ms aTimeMillis;
+    @logicalType("time-millis") int aTimeMillisInt;
+
+    @logicalType("time-micros") long aTimeMicrosLong;
+
+    timestamp_ms aTimestampMillis;
+    @logicalType("timestamp-millis") long aTimestampMillisInt;
+
+    @logicalType("timestamp-micros") long aTimestampMicrosLong;
+
+    @logicalType("duration") duration aDurationBytes;
+  }
+
   record NestedSchema {
     union { null, IPv4, IPv6 } nestedIp = null;
     union { null, array<NestedSchema> } nestedRecursiveArrayUnion = null;
