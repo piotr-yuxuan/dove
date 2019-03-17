@@ -110,7 +110,7 @@ Let's redefine this spec to something more idiomatic.
 ```
 
 At this point two specs are known to have been infered and won't be
-further altered. You can also use that to instruct `dove to leave
+further altered. You can also use that to instruct `dove` to leave
 some specs untouched if you are willing to define them yourself.
 
 ``` clojure
@@ -125,7 +125,7 @@ Now let's infer the spec for something bigger.
 => :com.bigCorp/Product
 ```
 
-```
+``` clojure
 (gen/generate (s/gen :com.bigCorp/Product))
 => {:category "BEAUTY",
     :warehouseCount 3
@@ -147,7 +147,7 @@ Likewise, they can be missing from a sample:
 # Further parameters
 
 The previous examples focus on the ease of use and keep things
-simple. Here are parameters you can tune to adapt =dove= to your
+simple. Here are parameters you can tune to adapt `dove` to your
 needs:
 
 ``` clojure
