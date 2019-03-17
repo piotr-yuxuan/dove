@@ -1,32 +1,33 @@
-#+TITLE:🕊 [[https://clojars.org/dove][dove]] [[https://img.shields.io/clojars/v/dove.svg]]
+# 🕊 [dove](https://clojars.org/dove)
 
-https://clojars.org/dove
+- [![Clojars Project](https://img.shields.io/clojars/v/dove.svg)](https://clojars.org/dove)
+- [![cljdoc badge](https://cljdoc.org/badge/dove/dove)](https://cljdoc.org/d/dove/dove/0.0.6)
 
-* What does it do?
+# What does it do?
 
 Infer specs from any Avro named type (record, fixed, or enum).
 
-* What can I use it for?
+# What can I use it for?
 
 Generative testing and pre-serialisation validation.
 
-[[resources/avro.jpg]]
+![avro aircraft](resources/avro.jpg)
 
 Avro was a British aircraft manufacturer. Nowadays it is a data
 serialization framework. A dove is smaller than an Avro aircraft, but
 it's softer and you can hold it in your hand, which makes it much more
 convenient when dealing with data manually.
 
-* How to use it
+# How to use it
 
 Test and demo Avro schemas sources and classes are generated from IDL
 files with this Maven command:
 
-#+BEGIN_SRC zsh
+``` zsh
 mvn clean compile
-#+END_SRC
+```
 
-#+BEGIN_SRC clojure :tangle ./resources/usage_demo.clj
+``` clojure
 (ns dove.usage-demo
   (:require [dove.core :as dove]
             [clojure.spec.alpha :as s]
@@ -44,56 +45,56 @@ mvn clean compile
                  )
     (java.nio ByteBuffer)
     (java.util UUID)))
-#+END_SRC
+```
 
 Turning a schema definition into a spec is straightforward with
-=dove/to-spec!=. It takes two arguments:
+`dove/to-spec!`. It takes two arguments:
 
 - The schema which you want to recursively infer specs from.
-- Spec generation parameters. Defaults are =dove/convenient-args=,
-  which are equivalent to ={}=.
+- Spec generation parameters. Defaults are `dove/convenient-args`,
+  which are equivalent to `{}`.
 
-#+BEGIN_SRC clojure :tangle ./resources/usage_demo.clj
+``` clojure
 (dove/to-spec! (Category/getClassSchema) {})
 => :com.bigCorp/Category
-#+END_SRC
+```
 
 This returns the spec keyword.
 
-#+BEGIN_SRC clojure :tangle ./resources/usage_demo.clj
+``` clojure
 (gen/generate (s/gen :com.bigCorp/Category))
 => "VEGETABLES"
 
 (gen/generate (s/gen :com.bigCorp/Category))
 => "BEAUTY"
-#+END_SRC
+```
 
 Clojure spec use a global registry. Dove mimics this and will ignore
 specs it has already infered.
 
-#+BEGIN_SRC clojure :tangle ./resources/usage_demo.clj
+``` clojure
 @dove/ignored-specs
 => #{:com.bigCorp/Category}
-#+END_SRC
+```
 
 Let's infer a spec for a named, fixed type:
 
-#+BEGIN_SRC clojure :tangle ./resources/usage_demo.clj
+``` clojure
 (dove/to-spec! (UID/getClassSchema) {})
 => :com.bigCorp/UID
-#+END_SRC
+```
 
 This spec matches the definition of a fixed type, so it's
 valid. However it doesn't give useful sample.
 
-#+BEGIN_SRC clojure :tangle ./resources/usage_demo.clj
+``` clojure
 (gen/generate (s/gen :com.bigCorp/UID))
 => #object["[B" 0x5b37ba4c "[B@5b37ba4c"]
-#+END_SRC
+```
 
 Let's redefine this spec to something more idiomatic.
 
-#+BEGIN_SRC clojure :tangle ./resources/usage_demo.clj
+``` clojure
 (defn bytes->uuid-v4
   ^UUID [^bytes b]
   (let [buffer ^ByteBuffer (ByteBuffer/wrap b)]
@@ -106,52 +107,51 @@ Let's redefine this spec to something more idiomatic.
 
 (gen/generate (s/gen :com.bigCorp/UID))
 => #uuid"d28df78a-8aa2-4b8c-b261-b0286581c865"
-#+END_SRC
+```
 
 At this point two specs are known to have been infered and won't be
-further altered. You can also use that to instruct =dove= to leave
+further altered. You can also use that to instruct `dove to leave
 some specs untouched if you are willing to define them yourself.
 
-#+BEGIN_SRC clojure :tangle ./resources/usage_demo.clj
+``` clojure
 @dove/ignored-specs
 => #{:com.bigCorp/Category :com.bigCorp/UID}
-#+END_SRC
+```
 
 Now let's infer the spec for something bigger.
 
-#+BEGIN_SRC clojure :tangle ./resources/usage_demo.clj
+``` clojure
 (dove/to-spec! (Product/getClassSchema) {})
 => :com.bigCorp/Product
-#+END_SRC
+```
 
-#+BEGIN_SRC clojure :tangle ./resources/usage_demo.clj
+```
 (gen/generate (s/gen :com.bigCorp/Product))
 => {:category "BEAUTY",
     :warehouseCount 3
     :familyVariants [#uuid"de3ad2cd-551e-4b5d-a144-6f018ea38450"],
     :retailPrice 12.4M,
     :id #uuid"44857f13-f64c-4c16-9c33-bc83b6602213"}
-#+END_SRC
+```
 
-Some fields are not mandatory because of =union { null, …
-}=. Likewise, they can be missing from a sample:
+Some fields are not mandatory because of `union { null, … }`.
+Likewise, they can be missing from a sample:
 
-#+BEGIN_SRC clojure :tangle ./resources/usage_demo.clj
+``` clojure
 (gen/generate (s/gen :com.bigCorp/Product))
 => {:familyVariants [],
     :retailPrice 3476.3M,
     :id #uuid"9ab4e463-14fc-4226-ad26-ccdf22e77263"}
-#+END_SRC
+```
 
-* Further parameters
+# Further parameters
 
 The previous examples focus on the ease of use and keep things
 simple. Here are parameters you can tune to adapt =dove= to your
 needs:
 
-#+BEGIN_SRC clojure
+``` clojure
 ;; in `dove.core`
-
 (def convenient-args
   "These args are not meant to be your default choice, but they are
   somehow convenient to use."
@@ -160,22 +160,22 @@ needs:
    :enum-obj? false
    :required-union-nil-value? false
    :dove.spec/keyword dove-spec-keyword})
-#+END_SRC
+```
 
-- When =:dry-run?= is =true=, =dove= will not define any spec but
+- When `:dry-run?` is `true`, `dove` will not define any spec but
   instead print its name.
-- When =:ns-keys?= is =true=, keys of generated sample will be
+- When `:ns-keys?` is `true`, keys of generated sample will be
   namespaced in a Datomic-like way.
-- When =:enum-obj?= is =true=, generated sample of =enum= will be
-  actual =Enum= instances and not mere strings.
-- When =:required-union-nil-value?= is =true=, all records fields will
-  be present in a sample. Fields which type is =union { null, … }=
+- When `:enum-obj?` is `true`, generated sample of `enum` will be
+  actual `Enum`f instances and not mere strings.
+- When `:required-union-nil-value?` is `true`, all records fields will
+  be present in a sample. Fields which type is `union { null, … }`
   could otherwise be missing.
-- When =:dove.spec/keyword= is filled, each generated record sample is
+- When `:dove.spec/keyword` is filled, each generated record sample is
   added its name under this key. This can be helpful to unambiguously
   generate Avro record from maps.
 
-#+BEGIN_SRC clojure :tangle ./resources/usage_demo.clj
+``` clojure
 (reset! dove/ignored-specs #{:com.bigCorp/UID})
 ;; => #{:com.bigCorp/UID}
 
@@ -195,21 +195,25 @@ needs:
     :com.bigCorp.Product/retailPrice 0.2M,
     :com.bigCorp.Product/id #uuid"f3ef308b-2bce-4664-95b9-eb7a1aa78fd6",
     :dove.spec/name :com.bigCorp/Product}
-#+END_SRC
+```
 
-* Troubleshoot
+# Troubleshoot
 
-Any behaviour different from [[https://avro.apache.org/docs/1.8.2/spec.html][Avro 1.8.2 specification]] should be
+Any behaviour different from [Avro 1.8.2
+specification](https://avro.apache.org/docs/1.8.2/spec.html) should be
 considered a bug.
 
 This library is currently under development. Feel free to give me any
 feedback and I'll be more than happy to help you.
 
-* Related projects
+# Related projects
 
 I've got a great deal of inspiration from these projects. They might
 suit your needs better than dove. Each of them is pretty impressive!
 
-- [[https://github.com/deercreeklabs/lancaster][lancaster]] from [[https://github.com/chadharrington][Chad Harrington]]
-- [[https://github.com/metosin/spec-tools][spec-tools]] from [[https://github.com/ikitommi][Tommi Reiman]]
-- [[https://github.com/stathissideris/spec-provider][spec-provider]] from [[https://github.com/stathissideris][Stathis Sideris]]
+- [lancaster](https://github.com/deercreeklabs/lancaster) from [Chad
+  Harrington](https://github.com/chadharrington)
+- [spec-tools](https://github.com/metosin/spec-tools) from [Tommi
+  Reiman](https://github.com/ikitommi)
+- [spec-provider](https://github.com/stathissideris/spec-provider)
+  from [Stathis Sideris](https://github.com/stathissideris)
