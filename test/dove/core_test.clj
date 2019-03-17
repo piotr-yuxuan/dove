@@ -143,7 +143,7 @@
       (testing "fixed"
         (dove/to-spec! (_cA_se_æÂê胡雨軒Петрº_Fixed/getClassSchema) {})
         (is (s/valid? (dove/->avro-fixed? 1) (gen/generate (s/gen :dove/_cA_se_æÂê胡雨軒Петрº_Fixed))))))
-    (testing "aliases"
+    (testing "aliases" ;; TODO For now only test the actual, current state of the record
       ;; use the actual name
       ;; accept alias record names
       ;; accept alias field names
