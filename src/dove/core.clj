@@ -13,7 +13,8 @@
             [camel-snake-kebab.extras :as case.e])
   (:import (org.apache.avro Schema$Field Schema$EnumSchema Schema$NullSchema Schema$BooleanSchema Schema$DoubleSchema Schema$FloatSchema Schema$LongSchema Schema$IntSchema Schema$BytesSchema Schema$StringSchema Schema$FixedSchema Schema$RecordSchema Schema$UnionSchema Schema$MapSchema Schema$ArraySchema LogicalTypes$Date LogicalTypes$TimestampMillis Schema$Type LogicalTypes$TimeMicros LogicalTypes$TimestampMicros LogicalTypes$TimeMillis LogicalTypes$Decimal)
            (org.joda.time DateTime LocalDate)
-           (java.nio ByteBuffer)))
+           (java.nio ByteBuffer))
+  (:gen-class))
 
 (def dove-spec-keyword
   :dove.spec/name)
