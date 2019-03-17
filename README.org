@@ -199,9 +199,8 @@ needs:
 
 * Troubleshoot
 
-Any behaviour different from what's specified here:
-https://avro.apache.org/docs/1.8.2/spec.html should be considered a
-bug.
+Any behaviour different from [[https://avro.apache.org/docs/1.8.2/spec.html][Avro 1.8.2 specification]] should be
+considered a bug.
 
 This library is currently under development. Feel free to give me any
 feedback and I'll be more than happy to help you.
