@@ -1,4 +1,6 @@
 (ns dove.core-test
+  "Reference: https://avro.apache.org/docs/1.8.2/spec.html.
+  Any difference should be considered a bug."
   (:require [clojure.test :refer :all]
             [dove.core :as dove]
             [clojure.spec.alpha :as s]

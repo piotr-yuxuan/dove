@@ -3,7 +3,10 @@
   result, side effects are acceptable in protocol ToSpec. `assert` is
   used more than usual. Wherever an inconsistent state is detected,
   it's prefered to raise a argsual error message rather than unclear
-  exception or worse: an erroneous output."
+  exception or worse: an erroneous output.
+
+  Reference: https://avro.apache.org/docs/1.8.2/spec.html.
+  Any difference should be considered a bug."
   (:require [clojure.spec.alpha :as s]
             [clojure.test.check.generators :as test.g]
             [clj-time.coerce :as tc]
