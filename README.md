@@ -20,7 +20,45 @@ convenient when dealing with data manually.
 
 # How to use it
 
-Test and demo Avro schemas sources and classes are generated from IDL
+Let's take a couple of simple schemas and infer spec from them.
+
+``` avdl
+// Namespace as Java-like package name
+@namespace("com.bigCorp")
+
+protocol Messages {
+
+  /** Unique identifier. Will be cast to a UUID. */
+  fixed UID(16);
+
+  /** Category of a product. A product can only have zero of one category. */
+  enum Category {
+    FASHION, VEGETABLES, BEAUTY, SPORTSWEAR
+  }
+
+  /** Description of a product. Only fields `id` and `retailPrice` are required. */
+  record Product {
+    /** Identifier of this product. Will be cast to a UUID. */
+    UID id;
+
+    /** What a customer must pay to get one item. Gross profit for each sold product. */
+    decimal(8,1) retailPrice;
+
+    /** If known, count of available items of this product from our big warehouse. */
+    union { null, int } warehouseCount = null;
+
+    /** Ids of all the variants of this product family, including this very product id. */
+    array<UID> familyVariants = [];
+
+    /** Category of this product, if relevant */
+    union { null, Category } category = null;
+  }
+}
+```
+
+I hope comments make it quite easy to understand.
+
+Demo Avro schemas sources and classes are generated from IDL
 files with this Maven command:
 
 ``` zsh
@@ -35,16 +73,9 @@ mvn clean compile
             [clojure.test.check.generators :as test.g]
             [clj-uuid :as uuid])
   ;; These schemas are for the purpose of the demo.
-  (:import
-    (com.bigCorp UID ;; Unique identifier. Will be cast to a
-                     ;; java.util.UUID.
-                 Category ;; Category of a product. A product can only
-                          ;; have zero of one category.
-                 Product ;; Description of a product. Only fields `id`
-                         ;; and `retailPrice` are required.
-                 )
-    (java.nio ByteBuffer)
-    (java.util UUID)))
+  (:import (com.bigCorp UID Category Product)
+           (java.nio ByteBuffer)
+           (java.util UUID)))
 ```
 
 Turning a schema definition into a spec is straightforward with
