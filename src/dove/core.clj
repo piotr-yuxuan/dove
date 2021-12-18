@@ -7,10 +7,10 @@
 
   Reference: https://avro.apache.org/docs/1.8.2/spec.html.
   Any difference should be considered a bug."
-  (:require [clojure.spec.alpha :as s]
-            [clojure.test.check.generators :as test.g]
+  (:require [camel-snake-kebab.extras :as case.e]
             [clj-time.coerce :as tc]
-            [camel-snake-kebab.extras :as case.e])
+            [clojure.spec.alpha :as s]
+            [clojure.test.check.generators :as test.g])
   (:import (org.apache.avro Schema$Field Schema$EnumSchema Schema$NullSchema Schema$BooleanSchema Schema$DoubleSchema Schema$FloatSchema Schema$LongSchema Schema$IntSchema Schema$BytesSchema Schema$StringSchema Schema$FixedSchema Schema$RecordSchema Schema$UnionSchema Schema$MapSchema Schema$ArraySchema LogicalTypes$Date LogicalTypes$TimestampMillis Schema$Type LogicalTypes$TimeMicros LogicalTypes$TimestampMicros LogicalTypes$TimeMillis LogicalTypes$Decimal)
            (org.joda.time DateTime LocalDate)
            (java.nio ByteBuffer))
