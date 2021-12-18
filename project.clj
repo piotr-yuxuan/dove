@@ -19,6 +19,8 @@
                                       "clojure-specs" "clojure-spec" "avro-format"]}
              :provided {:dependencies [[org.clojure/clojure "1.10.3"]]}
              :dev {:global-vars {*warn-on-reflection* true}
+                   :plugins [[lein-shell "0.5.0"]]
+                   :prep-tasks [["shell" "mvn" "clean" "compile"]]
                    :dependencies [[org.apache.avro/avro-maven-plugin "1.8.2"]
                                   [org.clojure/test.check "0.10.0-alpha3"]
                                   [org.clojure/spec.alpha "0.2.176"]
