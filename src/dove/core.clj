@@ -434,6 +434,158 @@ Represents an amount of time defined by a number of months, days and
           (keyword (:spec-ns args) (:spec-name args)))
         spec-keyword))))
 
+(extend-protocol ToSpec
+  Schema$StringSchema
+  (to-spec! [this args]
+    (spec-def args `string?)
+    (keyword (:spec-ns args) (:spec-name args)))
+
+  Schema$BytesSchema
+  (to-spec! [this args]
+    (let [logical-type (.getLogicalType this)]
+      (cond (instance? LogicalTypes$Decimal logical-type) (spec-def args `~(->avro-logical-decimal? (.getPrecision ^LogicalTypes$Decimal logical-type) (.getScale ^LogicalTypes$Decimal logical-type)))
+            :default (spec-def args `bytes?)))
+    (keyword (:spec-ns args) (:spec-name args)))
+
+  Schema$IntSchema
+  (to-spec! [this args]
+    (let [logical-type (.getLogicalType this)]
+      (cond (instance? LogicalTypes$Date logical-type) (spec-def args `avro-logical-date?)
+            (instance? LogicalTypes$TimeMillis logical-type) (spec-def args `avro-logical-time-millis?)
+            :default (spec-def args `avro-int?)))
+    (keyword (:spec-ns args) (:spec-name args)))
+
+  Schema$LongSchema
+  (to-spec! [this args]
+    (let [logical-type (.getLogicalType this)]
+      (cond (instance? LogicalTypes$TimeMicros logical-type) (spec-def args `avro-logical-time-micros?)
+            (instance? LogicalTypes$TimestampMillis logical-type) (spec-def args `avro-logical-timestamp-millis?)
+            (instance? LogicalTypes$TimestampMicros logical-type) (spec-def args `avro-logical-timestamp-micros?)
+            :default (spec-def args `avro-long?)))
+    (keyword (:spec-ns args) (:spec-name args)))
+
+  Schema$FloatSchema
+  (to-spec! [this args]
+    (spec-def args `avro-float?)
+    (keyword (:spec-ns args) (:spec-name args)))
+
+  Schema$DoubleSchema
+  (to-spec! [this args]
+    (spec-def args `avro-double?)
+    (keyword (:spec-ns args) (:spec-name args)))
+
+  Schema$BooleanSchema
+  (to-spec! [this args]
+    (spec-def args `boolean?)
+    (keyword (:spec-ns args) (:spec-name args)))
+
+  Schema$NullSchema
+  (to-spec! [this args]
+    (spec-def args `nil?)
+    (keyword (:spec-ns args) (:spec-name args)))
+
+  Schema$EnumSchema
+  (to-spec! [this args]
+    (let [enum-class (Class/forName (.getFullName this))
+          spec-keyword (keyword (.getNamespace this)
+                                (.getName this))
+          spec-values (.getEnumSymbols this)]
+      (spec-def (assoc args
+                  :spec-ns (.getNamespace this)
+                  :spec-name (.getName this))
+                (if (:enum-obj? args)
+                  `~(enum-obj-spec-value enum-class spec-values)
+                  `~(enum-str-spec-value spec-values)))
+      (if (and (:spec-ns args)
+               (:spec-name args))
+        (do (spec-def args `~spec-keyword)
+            (keyword (:spec-ns args) (:spec-name args)))
+        (keyword (.getNamespace this) (.getName this)))))
+
+  Schema$FixedSchema
+  (to-spec! [this args]
+    (let [spec-keyword (keyword (.getNamespace this)
+                                (.getName this))
+          logical-type (.getLogicalType this)]
+      (cond (instance? LogicalTypes$Decimal logical-type) (spec-def args `~(->avro-logical-decimal? (.getPrecision ^LogicalTypes$Decimal logical-type) (.getScale ^LogicalTypes$Decimal logical-type)))
+            ;; FIXME AVRO BUG: duration fixed(12) should be supported
+            ;; here, but is unknown to package
+            ;; org.apache.avro/LogicalTypes. Meh.
+            :default (spec-def (assoc args
+                                 :spec-ns (.getNamespace this)
+                                 :spec-name (.getName this))
+                               `~(->avro-fixed? (.getFixedSize this))))
+      (if (and (:spec-ns args)
+               (:spec-name args))
+        (do (spec-def args `~spec-keyword)
+            (keyword (:spec-ns args) (:spec-name args)))
+        (keyword (.getNamespace this) (.getName this)))))
+
+  Schema$MapSchema
+  (to-spec! [this args]
+    (let [value-schema (.getValueType this)
+          spec-name (hierarchy-derive (:spec-name args) (.getName value-schema))
+          spec-keyword (to-spec! value-schema (assoc args :spec-name spec-name))]
+      (spec-def args
+                `~(map-spec-value spec-keyword))
+      (keyword (:spec-ns args) (:spec-name args))))
+
+  Schema$ArraySchema
+  (to-spec! [this args]
+    (let [value-schema (.getElementType this)
+          spec-name (hierarchy-derive (:spec-name args) (.getName value-schema))
+          spec-keyword (to-spec! value-schema (assoc args :spec-name spec-name))]
+      (spec-def args
+                `~(array-spec-value spec-keyword))
+      (keyword (:spec-ns args) (:spec-name args))))
+
+  Schema$UnionSchema
+  (to-spec! [this args]
+    (let [spec-names (->> (.getTypes ^Schema$UnionSchema this)
+                          (map (fn [schema]
+                                 (let [spec-name (hierarchy-derive (:spec-name args) (.getName schema))]
+                                   (to-spec! schema (assoc args :spec-name spec-name))))))]
+      (spec-def args
+                (union-spec-symbol spec-names))
+      (keyword (:spec-ns args) (:spec-name args))))
+
+  Schema$Field
+  (to-spec! [this args]
+    (to-spec! (.schema this)
+              (assoc args
+                :spec-field this
+                :spec-name (.name this))))
+
+  Schema$RecordSchema
+  (to-spec! [this args]
+    (let [record-fields (.getFields this)
+          spec-ns (.getNamespace this)
+          spec-name (.getName this)
+          spec-keyword (keyword spec-ns spec-name)
+          spec-keys (reduce (fn [acc field]
+                              (let [spec-key (to-spec! field (assoc args
+                                                               :spec-ns (hierarchy-derive spec-ns spec-name)
+                                                               :spec-name (.name field)))]
+                                (update acc (optional-key? field args) conj spec-key)))
+                            {}
+                            record-fields)]
+      (doseq [field record-fields]
+        (to-spec! field (assoc args
+                          :spec-ns (hierarchy-derive spec-ns spec-name))))
+      (spec-def (assoc args
+                  :spec-ns spec-ns
+                  :spec-name spec-name)
+                (record-spec-symbol (assoc args
+                                      :spec-ns spec-ns
+                                      :spec-name spec-name)
+                                    spec-keys))
+      (if (and (:spec-ns args)
+               (:spec-name args))
+        (do
+          (spec-def args `~spec-keyword)
+          (keyword (:spec-ns args) (:spec-name args)))
+        spec-keyword))))
+
 (extend-protocol MapQualifier
   Schema$MapSchema
   (-qualify-map [schema args]
