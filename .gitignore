@@ -20,4 +20,5 @@ checkouts
 perf/.terraform*
 perf/.terraform/**
 perf/terraform*
-pom.xml.asc
+pom.xml.asc*.class
+target/
