@@ -199,9 +199,7 @@ Represents an amount of time defined by a number of months, days and
 
 (def enum-str-spec-value
   (memoize
-    (fn [spec-values]
-
-      (set spec-values))))
+    set))
 
 (def union-spec-symbol
   (memoize
@@ -389,10 +387,7 @@ Represents an amount of time defined by a number of months, days and
 
   Schema$UnionSchema
   (to-spec! [this args]
-    (let [spec-names (->> (.getTypes ^Schema$UnionSchema this)
-                          (map (fn [schema]
-                                 (let [spec-name (hierarchy-derive (:spec-name args) (.getName schema))]
-                                   (to-spec! schema (assoc args :spec-name spec-name))))))]
+    (let [spec-names (map (fn [schema] (let [spec-name (hierarchy-derive (:spec-name args) (.getName schema))] (to-spec! schema (assoc args :spec-name spec-name)))) (.getTypes this))]
       (spec-def args
                 (union-spec-symbol spec-names))
       (keyword (:spec-ns args) (:spec-name args))))
@@ -541,10 +536,7 @@ Represents an amount of time defined by a number of months, days and
 
   Schema$UnionSchema
   (to-spec! [this args]
-    (let [spec-names (->> (.getTypes ^Schema$UnionSchema this)
-                          (map (fn [schema]
-                                 (let [spec-name (hierarchy-derive (:spec-name args) (.getName schema))]
-                                   (to-spec! schema (assoc args :spec-name spec-name))))))]
+    (let [spec-names (map (fn [schema] (let [spec-name (hierarchy-derive (:spec-name args) (.getName schema))] (to-spec! schema (assoc args :spec-name spec-name)))) (.getTypes this))]
       (spec-def args
                 (union-spec-symbol spec-names))
       (keyword (:spec-ns args) (:spec-name args))))
@@ -597,7 +589,7 @@ Represents an amount of time defined by a number of months, days and
                                            (update :path conj k)
                                            (assoc :value v)))]
                [k new-v]))
-           (-> args :value))))
+           (:value args))))
 
   Schema$ArraySchema
   (-qualify-map [schema args]
@@ -609,7 +601,7 @@ Represents an amount of time defined by a number of months, days and
                         (-> args
                             (update :path conj i)
                             (assoc :value v))))
-        (-> args :value))))
+        (:value args))))
 
   Schema$UnionSchema
   (-qualify-map [schema args]
@@ -646,11 +638,11 @@ Represents an amount of time defined by a number of months, days and
                                (assoc :value v)
                                (update :path conj k)))]
                [new-k new-v]))
-           (-> args :value))))
+           (:value args))))
 
   Object
   (-qualify-map [schema args]
-    (-> args :value)))
+    (:value args)))
 
 (defn qualify-map
   "Recursively qualify keys of a map to match some schema
