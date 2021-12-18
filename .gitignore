@@ -1,6 +1,6 @@
 .cpcache/
 .nrepl-port
-target/*.class
+target/
 *.iml
 */.lein-*
 */.nrepl-port
@@ -20,8 +20,5 @@ checkouts
 perf/.terraform*
 perf/.terraform/**
 perf/terraform*
-pom.xml.asc*.class
-target/*.class
-pom.xml.asc*.class
-target/*.class
 pom.xml.asc
+*.class
