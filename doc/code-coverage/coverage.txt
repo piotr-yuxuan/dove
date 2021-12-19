@@ -1,0 +1,2 @@
+Lines Non-Blank Instrumented Covered Partial
+  667       597          441     269      16 dove/core.clj

@@ -1,0 +1,2009 @@
+<html>
+ <head>
+   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+  <link rel="stylesheet" href="../coverage.css"/>  <title> dove/core.clj </title>
+ </head>
+ <body>
+<span class="covered" title="1 out of 1 forms covered">
+                001&nbsp;&nbsp;(ns&nbsp;dove.core
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                002&nbsp;&nbsp;&nbsp;&nbsp;&quot;Avro&nbsp;schema&nbsp;are&nbsp;constant,&nbsp;spec&nbsp;are&nbsp;designed&nbsp;to&nbsp;be&nbsp;constant.&nbsp;As&nbsp;a
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                003&nbsp;&nbsp;&nbsp;&nbsp;result,&nbsp;side&nbsp;effects&nbsp;are&nbsp;acceptable&nbsp;in&nbsp;protocol&nbsp;ToSpec.&nbsp;`assert`&nbsp;is
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                004&nbsp;&nbsp;&nbsp;&nbsp;used&nbsp;more&nbsp;than&nbsp;usual.&nbsp;Wherever&nbsp;an&nbsp;inconsistent&nbsp;state&nbsp;is&nbsp;detected,
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                005&nbsp;&nbsp;&nbsp;&nbsp;it&#x27;s&nbsp;prefered&nbsp;to&nbsp;raise&nbsp;a&nbsp;argsual&nbsp;error&nbsp;message&nbsp;rather&nbsp;than&nbsp;unclear
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                006&nbsp;&nbsp;&nbsp;&nbsp;exception&nbsp;or&nbsp;worse:&nbsp;an&nbsp;erroneous&nbsp;output.
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                007&nbsp;&nbsp;
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                008&nbsp;&nbsp;&nbsp;&nbsp;Reference:&nbsp;https:&#x2F;&#x2F;avro.apache.org&#x2F;docs&#x2F;1.8.2&#x2F;spec.html.
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                009&nbsp;&nbsp;&nbsp;&nbsp;Any&nbsp;difference&nbsp;should&nbsp;be&nbsp;considered&nbsp;a&nbsp;bug.&quot;
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                010&nbsp;&nbsp;&nbsp;&nbsp;(:require&nbsp;[camel-snake-kebab.extras&nbsp;:as&nbsp;case.e]
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                011&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[clj-time.coerce&nbsp;:as&nbsp;tc]
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                012&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[clojure.spec.alpha&nbsp;:as&nbsp;s]
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                013&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[clojure.test.check.generators&nbsp;:as&nbsp;test.g])
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                014&nbsp;&nbsp;&nbsp;&nbsp;(:import&nbsp;(org.apache.avro&nbsp;Schema$Field&nbsp;Schema$EnumSchema&nbsp;Schema$NullSchema&nbsp;Schema$BooleanSchema&nbsp;Schema$DoubleSchema&nbsp;Schema$FloatSchema&nbsp;Schema$LongSchema&nbsp;Schema$IntSchema&nbsp;Schema$BytesSchema&nbsp;Schema$StringSchema&nbsp;Schema$FixedSchema&nbsp;Schema$RecordSchema&nbsp;Schema$UnionSchema&nbsp;Schema$MapSchema&nbsp;Schema$ArraySchema&nbsp;LogicalTypes$Date&nbsp;LogicalTypes$TimestampMillis&nbsp;Schema$Type&nbsp;LogicalTypes$TimeMicros&nbsp;LogicalTypes$TimestampMicros&nbsp;LogicalTypes$TimeMillis&nbsp;LogicalTypes$Decimal)
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                015&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(org.joda.time&nbsp;DateTime&nbsp;LocalDate)
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                016&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(java.nio&nbsp;ByteBuffer))
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                017&nbsp;&nbsp;&nbsp;&nbsp;(:gen-class))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                018&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                019&nbsp;&nbsp;(def&nbsp;dove-spec-keyword
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                020&nbsp;&nbsp;&nbsp;&nbsp;:dove.spec&#x2F;name)
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                021&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                022&nbsp;&nbsp;(def&nbsp;convenient-args
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                023&nbsp;&nbsp;&nbsp;&nbsp;&quot;These&nbsp;args&nbsp;are&nbsp;not&nbsp;meant&nbsp;to&nbsp;be&nbsp;your&nbsp;default&nbsp;choice,&nbsp;but&nbsp;they&nbsp;are
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                024&nbsp;&nbsp;&nbsp;&nbsp;somehow&nbsp;convenient&nbsp;to&nbsp;use.&quot;
+                </span><br/>
+<span class="covered" title="10 out of 10 forms covered">
+                025&nbsp;&nbsp;&nbsp;&nbsp;{:dry-run?&nbsp;false
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                026&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:ns-keys?&nbsp;false
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                027&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:enum-obj?&nbsp;false
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                028&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:required-union-nil-value?&nbsp;false
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                029&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:dove.spec&#x2F;keyword&nbsp;dove-spec-keyword})
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                030&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                031&nbsp;&nbsp;(def&nbsp;ignored-specs
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                032&nbsp;&nbsp;&nbsp;&nbsp;&quot;Spec&nbsp;not&nbsp;to&nbsp;be&nbsp;infered.&nbsp;Useful&nbsp;if&nbsp;you&nbsp;want&nbsp;to&nbsp;use&nbsp;some&nbsp;custom
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                033&nbsp;&nbsp;&nbsp;&nbsp;specs.&nbsp;Used&nbsp;by&nbsp;to-spec!&nbsp;to&nbsp;keep&nbsp;track&nbsp;of&nbsp;specs&nbsp;and&nbsp;register&nbsp;a&nbsp;spec
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                034&nbsp;&nbsp;&nbsp;&nbsp;only&nbsp;once.&quot;
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                035&nbsp;&nbsp;&nbsp;&nbsp;(atom&nbsp;#{}))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                036&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                037&nbsp;&nbsp;(defprotocol&nbsp;ToSpec
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                038&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]&nbsp;&quot;Recursively&nbsp;infer&nbsp;and&nbsp;register&nbsp;spec&nbsp;of
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                039&nbsp;&nbsp;&nbsp;&nbsp;record-schema&nbsp;and&nbsp;any&nbsp;nested&nbsp;schemas.&quot;))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                040&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                041&nbsp;&nbsp;(defprotocol&nbsp;MapQualifier
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                042&nbsp;&nbsp;&nbsp;&nbsp;(-qualify-map&nbsp;[schema&nbsp;args]&nbsp;&quot;Recursively&nbsp;qualify&nbsp;keys&nbsp;of&nbsp;a&nbsp;map&nbsp;to
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                043&nbsp;&nbsp;&nbsp;&nbsp;match&nbsp;some&nbsp;schema&nbsp;namespace.&quot;))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                044&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                045&nbsp;&nbsp;(def&nbsp;-&gt;avro-fixed?
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                046&nbsp;&nbsp;&nbsp;&nbsp;&quot;Sequence&nbsp;of&nbsp;8-bit&nbsp;unsigned&nbsp;bytes.&nbsp;Returns&nbsp;a&nbsp;singleton&nbsp;of&nbsp;the&nbsp;given
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                047&nbsp;&nbsp;&nbsp;&nbsp;size.&quot;
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                048&nbsp;&nbsp;&nbsp;&nbsp;(memoize
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                049&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fn&nbsp;[fixed-size]
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                050&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s&#x2F;with-gen
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                051&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#(and&nbsp;(bytes?&nbsp;%)
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                052&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(=&nbsp;fixed-size&nbsp;(.limit&nbsp;(ByteBuffer&#x2F;wrap&nbsp;%))))
+                </span><br/>
+<span class="covered" title="7 out of 7 forms covered">
+                053&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#(test.g&#x2F;fmap&nbsp;byte-array&nbsp;(test.g&#x2F;vector&nbsp;test.g&#x2F;byte&nbsp;fixed-size))))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                054&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                055&nbsp;&nbsp;(def&nbsp;avro-int?
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                056&nbsp;&nbsp;&nbsp;&nbsp;&quot;Int:&nbsp;32-bit&nbsp;signed&nbsp;two&#x27;s&nbsp;complement&nbsp;integer&quot;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                057&nbsp;&nbsp;&nbsp;&nbsp;int?)
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                058&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                059&nbsp;&nbsp;(def&nbsp;avro-long?
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                060&nbsp;&nbsp;&nbsp;&nbsp;&quot;Long:&nbsp;64-bit&nbsp;signed&nbsp;integer&quot;
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                061&nbsp;&nbsp;&nbsp;&nbsp;(s&#x2F;with-gen
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                062&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#(instance?&nbsp;Long&nbsp;%)
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                063&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#(test.g&#x2F;fmap
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                064&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;long
+                </span><br/>
+<span class="covered" title="9 out of 9 forms covered">
+                065&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(test.g&#x2F;double*&nbsp;{:infinite?&nbsp;false
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                066&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:NaN?&nbsp;false
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                067&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:min&nbsp;Long&#x2F;MIN_VALUE
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                068&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:max&nbsp;Long&#x2F;MAX_VALUE}))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                069&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                070&nbsp;&nbsp;(def&nbsp;avro-float?
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                071&nbsp;&nbsp;&nbsp;&nbsp;&quot;Imprecise.&nbsp;Single&nbsp;precision&nbsp;(32-bit)&nbsp;IEEE&nbsp;754&nbsp;floating-point&nbsp;number&quot;
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                072&nbsp;&nbsp;&nbsp;&nbsp;(s&#x2F;with-gen
+                </span><br/>
+<span class="partial" title="12 out of 13 forms covered">
+                073&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#(and&nbsp;(instance?&nbsp;Float&nbsp;%)
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                074&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(not&nbsp;(Float&#x2F;isNaN&nbsp;%))
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                075&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Float&#x2F;isFinite&nbsp;%))
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                076&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#(test.g&#x2F;fmap
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                077&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;float
+                </span><br/>
+<span class="covered" title="9 out of 9 forms covered">
+                078&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(test.g&#x2F;double*&nbsp;{:infinite?&nbsp;false
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                079&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:NaN?&nbsp;false
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                080&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:min&nbsp;Float&#x2F;MIN_VALUE
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                081&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:max&nbsp;Float&#x2F;MAX_VALUE}))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                082&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                083&nbsp;&nbsp;(def&nbsp;avro-double?
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                084&nbsp;&nbsp;&nbsp;&nbsp;&quot;Imprecise.&nbsp;Double&nbsp;precision&nbsp;(64-bit)&nbsp;IEEE&nbsp;754&nbsp;floating-point&nbsp;number&quot;
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                085&nbsp;&nbsp;&nbsp;&nbsp;(s&#x2F;with-gen
+                </span><br/>
+<span class="partial" title="12 out of 13 forms covered">
+                086&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#(and&nbsp;(instance?&nbsp;Double&nbsp;%)
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                087&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(not&nbsp;(Double&#x2F;isNaN&nbsp;%))
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                088&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Double&#x2F;isFinite&nbsp;%))
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                089&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#(test.g&#x2F;fmap
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                090&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;double
+                </span><br/>
+<span class="covered" title="9 out of 9 forms covered">
+                091&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(test.g&#x2F;double*&nbsp;{:infinite?&nbsp;false
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                092&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:NaN?&nbsp;false
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                093&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:min&nbsp;Double&#x2F;MIN_VALUE
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                094&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:max&nbsp;Double&#x2F;MAX_VALUE}))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                095&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                096&nbsp;&nbsp;(defn&nbsp;-&gt;avro-logical-decimal?
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                097&nbsp;&nbsp;&nbsp;&nbsp;&quot;Represents&nbsp;an&nbsp;arbitrary-precision&nbsp;signed&nbsp;decimal&nbsp;number&nbsp;of&nbsp;the&nbsp;form
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                098&nbsp;&nbsp;&nbsp;&nbsp;precision&nbsp;×&nbsp;10-scale.&nbsp;Annotates&nbsp;Avro&nbsp;bytes&nbsp;or&nbsp;fixed&nbsp;types.
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                099&nbsp;&nbsp;&nbsp;&nbsp;Represented&nbsp;with&nbsp;a&nbsp;`java.math.BigDecimal`&nbsp;in&nbsp;generated&nbsp;Java
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                100&nbsp;&nbsp;&nbsp;&nbsp;sources.&quot;
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                101&nbsp;&nbsp;&nbsp;&nbsp;[precision&nbsp;scale]
+                </span><br/>
+<span class="partial" title="5 out of 20 forms covered">
+                102&nbsp;&nbsp;&nbsp;&nbsp;(assert&nbsp;(&lt;=&nbsp;scale&nbsp;precision)&nbsp;(format&nbsp;&quot;Invalid&nbsp;decimal&nbsp;scale:&nbsp;%s&nbsp;(greater&nbsp;than&nbsp;precision:&nbsp;%s)&quot;&nbsp;scale&nbsp;precision))
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                103&nbsp;&nbsp;&nbsp;&nbsp;(s&#x2F;with-gen
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                104&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#(instance?&nbsp;BigDecimal&nbsp;%)
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                105&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fn&nbsp;[]
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                106&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(test.g&#x2F;fmap
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                107&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#(BigDecimal&#x2F;valueOf&nbsp;%&nbsp;scale)
+                </span><br/>
+<span class="covered" title="6 out of 6 forms covered">
+                108&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(test.g&#x2F;large-integer*&nbsp;{:min&nbsp;0
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                109&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:max&nbsp;(dec&nbsp;(Math&#x2F;pow&nbsp;10&nbsp;precision))})))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                110&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                111&nbsp;&nbsp;(def&nbsp;epoch
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                112&nbsp;&nbsp;&nbsp;&nbsp;(clj-time.core&#x2F;epoch))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                113&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                114&nbsp;&nbsp;(def&nbsp;avro-logical-date?
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                115&nbsp;&nbsp;&nbsp;&nbsp;&quot;Represents&nbsp;a&nbsp;date&nbsp;within&nbsp;the&nbsp;calendar,&nbsp;with&nbsp;no&nbsp;reference&nbsp;to&nbsp;a
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                116&nbsp;&nbsp;&nbsp;&nbsp;particular&nbsp;time&nbsp;zone&nbsp;or&nbsp;time&nbsp;of&nbsp;day.&nbsp;Annotates&nbsp;an&nbsp;Avro&nbsp;int,&nbsp;where
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                117&nbsp;&nbsp;&nbsp;&nbsp;the&nbsp;int&nbsp;stores&nbsp;the&nbsp;number&nbsp;of&nbsp;days&nbsp;from&nbsp;the&nbsp;unix&nbsp;epoch,&nbsp;1&nbsp;January
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                118&nbsp;&nbsp;&nbsp;&nbsp;1970&nbsp;(ISO&nbsp;calendar).&nbsp;Represented&nbsp;with&nbsp;`org.joda.time.LocalDate`&nbsp;in
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                119&nbsp;&nbsp;&nbsp;&nbsp;generated&nbsp;Java&nbsp;sources.&quot;
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                120&nbsp;&nbsp;&nbsp;&nbsp;(s&#x2F;with-gen
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                121&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#(instance?&nbsp;LocalDate&nbsp;%)
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                122&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fn&nbsp;[]&nbsp;(test.g&#x2F;fmap
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                123&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#(-&gt;&gt;&nbsp;(clj-time.core&#x2F;days&nbsp;%)
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                124&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(clj-time.core&#x2F;plus&nbsp;epoch)
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                125&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(clj-time.coerce&#x2F;to-local-date))
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                126&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s&#x2F;gen&nbsp;int?)))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                127&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                128&nbsp;&nbsp;(def&nbsp;avro-logical-time-millis?
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                129&nbsp;&nbsp;&nbsp;&nbsp;&quot;Represents&nbsp;a&nbsp;time&nbsp;of&nbsp;day,&nbsp;with&nbsp;no&nbsp;reference&nbsp;to&nbsp;a&nbsp;particular&nbsp;calendar,
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                130&nbsp;&nbsp;&nbsp;&nbsp;time&nbsp;zone&nbsp;or&nbsp;date,&nbsp;with&nbsp;a&nbsp;precision&nbsp;of&nbsp;one&nbsp;millisecond.&nbsp;Annotates&nbsp;an
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                131&nbsp;&nbsp;&nbsp;&nbsp;Avro&nbsp;int,&nbsp;where&nbsp;the&nbsp;int&nbsp;stores&nbsp;the&nbsp;number&nbsp;of&nbsp;milliseconds&nbsp;after
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                132&nbsp;&nbsp;&nbsp;&nbsp;midnight,&nbsp;00:00:00.000.&nbsp;Represented&nbsp;with&nbsp;`org.joda.time.LocalDate`
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                133&nbsp;&nbsp;&nbsp;&nbsp;in&nbsp;generated&nbsp;Java&nbsp;sources.&quot;
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                134&nbsp;&nbsp;&nbsp;&nbsp;(s&#x2F;with-gen
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                135&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#(instance?&nbsp;LocalDate&nbsp;%)
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                136&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fn&nbsp;[]&nbsp;(test.g&#x2F;fmap
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                137&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(comp&nbsp;tc&#x2F;to-local-date&nbsp;tc&#x2F;from-long)
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                138&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s&#x2F;gen&nbsp;avro-int?)))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                139&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                140&nbsp;&nbsp;(def&nbsp;avro-logical-time-micros?
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                141&nbsp;&nbsp;&nbsp;&nbsp;&quot;Represents&nbsp;a&nbsp;time&nbsp;of&nbsp;day,&nbsp;with&nbsp;no&nbsp;reference&nbsp;to&nbsp;a&nbsp;particular&nbsp;calendar,
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                142&nbsp;&nbsp;&nbsp;&nbsp;time&nbsp;zone&nbsp;or&nbsp;date,&nbsp;with&nbsp;a&nbsp;precision&nbsp;of&nbsp;one&nbsp;microsecond.&nbsp;&nbsp;Annotates
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                143&nbsp;&nbsp;&nbsp;&nbsp;an&nbsp;Avro&nbsp;long,&nbsp;where&nbsp;the&nbsp;long&nbsp;stores&nbsp;the&nbsp;number&nbsp;of&nbsp;microseconds&nbsp;after
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                144&nbsp;&nbsp;&nbsp;&nbsp;midnight,&nbsp;00:00:00.000000.&nbsp;&nbsp;Represented&nbsp;with&nbsp;primitive&nbsp;`long`&nbsp;in
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                145&nbsp;&nbsp;&nbsp;&nbsp;generated&nbsp;Java&nbsp;sources.&quot;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                146&nbsp;&nbsp;&nbsp;&nbsp;avro-long?)
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                147&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                148&nbsp;&nbsp;(def&nbsp;avro-logical-timestamp-millis?
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                149&nbsp;&nbsp;&nbsp;&nbsp;&quot;Represents&nbsp;an&nbsp;instant&nbsp;on&nbsp;the&nbsp;global&nbsp;timeline,&nbsp;independent&nbsp;of&nbsp;a
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                150&nbsp;&nbsp;&nbsp;&nbsp;particular&nbsp;time&nbsp;zone&nbsp;or&nbsp;calendar,&nbsp;with&nbsp;a&nbsp;precision&nbsp;of&nbsp;one
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                151&nbsp;&nbsp;&nbsp;&nbsp;millisecond.&nbsp;Annotates&nbsp;an&nbsp;Avro&nbsp;long,&nbsp;where&nbsp;the&nbsp;long&nbsp;stores&nbsp;the
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                152&nbsp;&nbsp;&nbsp;&nbsp;number&nbsp;of&nbsp;milliseconds&nbsp;from&nbsp;the&nbsp;unix&nbsp;epoch,&nbsp;1&nbsp;January&nbsp;1970
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                153&nbsp;&nbsp;&nbsp;&nbsp;00:00:00.000&nbsp;UTC.&nbsp;Represented&nbsp;with&nbsp;`org.joda.time.DateTime`&nbsp;in
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                154&nbsp;&nbsp;&nbsp;&nbsp;generated&nbsp;Java&nbsp;sources.&quot;
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                155&nbsp;&nbsp;&nbsp;&nbsp;(s&#x2F;with-gen
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                156&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#(instance?&nbsp;DateTime&nbsp;%)
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                157&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#(test.g&#x2F;fmap
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                158&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;tc&#x2F;from-long
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                159&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s&#x2F;gen&nbsp;avro-long?))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                160&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                161&nbsp;&nbsp;(def&nbsp;avro-logical-timestamp-micros?
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                162&nbsp;&nbsp;&nbsp;&nbsp;&quot;Represents&nbsp;an&nbsp;instant&nbsp;on&nbsp;the&nbsp;global&nbsp;timeline,&nbsp;independent&nbsp;of&nbsp;a
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                163&nbsp;&nbsp;&nbsp;&nbsp;particular&nbsp;time&nbsp;zone&nbsp;or&nbsp;calendar,&nbsp;with&nbsp;a&nbsp;precision&nbsp;of&nbsp;one
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                164&nbsp;&nbsp;&nbsp;&nbsp;microsecond.&nbsp;Annotates&nbsp;an&nbsp;Avro&nbsp;long,&nbsp;where&nbsp;the&nbsp;long&nbsp;stores&nbsp;the
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                165&nbsp;&nbsp;&nbsp;&nbsp;number&nbsp;of&nbsp;microseconds&nbsp;from&nbsp;the&nbsp;unix&nbsp;epoch,&nbsp;1&nbsp;January&nbsp;1970
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                166&nbsp;&nbsp;&nbsp;&nbsp;00:00:00.000000&nbsp;UTC.&nbsp;Represented&nbsp;with&nbsp;primitive&nbsp;`long`&nbsp;generated
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                167&nbsp;&nbsp;&nbsp;&nbsp;Java&nbsp;sources.&quot;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                168&nbsp;&nbsp;&nbsp;&nbsp;avro-long?)
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                169&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                170&nbsp;&nbsp;(def&nbsp;avro-logical-duration?
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                171&nbsp;&nbsp;&nbsp;&nbsp;&quot;This&nbsp;logical&nbsp;type&nbsp;is&nbsp;supported&nbsp;as&nbsp;is&nbsp;with&nbsp;no&nbsp;overloading&nbsp;of&nbsp;its
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                172&nbsp;&nbsp;&nbsp;&nbsp;underlying&nbsp;type.&nbsp;It&nbsp;is&nbsp;currently&nbsp;unknown&nbsp;to&nbsp;package
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                173&nbsp;&nbsp;&nbsp;&nbsp;`org.apache.avro&#x2F;LogicalTypes`&nbsp;so&nbsp;should&nbsp;probably&nbsp;be&nbsp;used&nbsp;with
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                174&nbsp;&nbsp;&nbsp;&nbsp;caution.&nbsp;You&#x27;re&nbsp;alone;&nbsp;good&nbsp;luck.
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                175&nbsp;&nbsp;
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                176&nbsp;&nbsp;Represents&nbsp;an&nbsp;amount&nbsp;of&nbsp;time&nbsp;defined&nbsp;by&nbsp;a&nbsp;number&nbsp;of&nbsp;months,&nbsp;days&nbsp;and
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                177&nbsp;&nbsp;&nbsp;&nbsp;milliseconds.&nbsp;This&nbsp;is&nbsp;not&nbsp;equivalent&nbsp;to&nbsp;a&nbsp;number&nbsp;of&nbsp;milliseconds,
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                178&nbsp;&nbsp;&nbsp;&nbsp;because,&nbsp;depending&nbsp;on&nbsp;the&nbsp;moment&nbsp;in&nbsp;time&nbsp;from&nbsp;which&nbsp;the&nbsp;duration&nbsp;is
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                179&nbsp;&nbsp;&nbsp;&nbsp;measured,&nbsp;the&nbsp;number&nbsp;of&nbsp;days&nbsp;in&nbsp;the&nbsp;month&nbsp;and&nbsp;number&nbsp;of&nbsp;milliseconds
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                180&nbsp;&nbsp;&nbsp;&nbsp;in&nbsp;a&nbsp;day&nbsp;may&nbsp;differ.&nbsp;Other&nbsp;standard&nbsp;periods&nbsp;such&nbsp;as&nbsp;years,&nbsp;quarters,
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                181&nbsp;&nbsp;&nbsp;&nbsp;hours&nbsp;and&nbsp;minutes&nbsp;can&nbsp;be&nbsp;expressed&nbsp;through&nbsp;these&nbsp;basic
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                182&nbsp;&nbsp;&nbsp;&nbsp;periods.&nbsp;Annotates&nbsp;Avro&nbsp;fixed&nbsp;type&nbsp;of&nbsp;size&nbsp;12,&nbsp;which&nbsp;stores&nbsp;three
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                183&nbsp;&nbsp;&nbsp;&nbsp;little-endian&nbsp;unsigned&nbsp;integers&nbsp;that&nbsp;represent&nbsp;durations&nbsp;at
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                184&nbsp;&nbsp;&nbsp;&nbsp;different&nbsp;granularities&nbsp;of&nbsp;time.&nbsp;The&nbsp;first&nbsp;stores&nbsp;a&nbsp;number&nbsp;in
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                185&nbsp;&nbsp;&nbsp;&nbsp;months,&nbsp;the&nbsp;second&nbsp;stores&nbsp;a&nbsp;number&nbsp;in&nbsp;days,&nbsp;and&nbsp;the&nbsp;third&nbsp;stores&nbsp;a
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                186&nbsp;&nbsp;&nbsp;&nbsp;number&nbsp;in&nbsp;milliseconds.&nbsp;Represented&nbsp;with&nbsp;custom&nbsp;named&nbsp;type
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                187&nbsp;&nbsp;&nbsp;&nbsp;`fixed(12)`&nbsp;in&nbsp;generated&nbsp;Java&nbsp;sources.&quot;
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                188&nbsp;&nbsp;&nbsp;&nbsp;(-&gt;avro-fixed?&nbsp;12))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                189&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                190&nbsp;&nbsp;(def&nbsp;enum-obj-spec-value
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                191&nbsp;&nbsp;&nbsp;&nbsp;(memoize
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                192&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fn&nbsp;[enum-class&nbsp;spec-values]
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                193&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s&#x2F;with-gen
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                194&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#(instance?&nbsp;enum-class&nbsp;%)
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                195&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#(test.g&#x2F;fmap
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                196&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fn&nbsp;[enum-str]
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                197&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(Enum&#x2F;valueOf&nbsp;enum-class&nbsp;enum-str))
+                </span><br/>
+<span class="covered" title="5 out of 5 forms covered">
+                198&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s&#x2F;gen&nbsp;(set&nbsp;spec-values)))))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                199&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                200&nbsp;&nbsp;(def&nbsp;enum-str-spec-value
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                201&nbsp;&nbsp;&nbsp;&nbsp;(memoize
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                202&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;set))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                203&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                204&nbsp;&nbsp;(def&nbsp;union-spec-symbol
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                205&nbsp;&nbsp;&nbsp;&nbsp;(memoize
+                </span><br/>
+<span class="covered" title="10 out of 10 forms covered">
+                206&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fn&nbsp;[spec-names]
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                207&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`(s&#x2F;or
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                208&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;~@(mapcat
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                209&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(juxt&nbsp;identity
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                210&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;identity)
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                211&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-names)))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                212&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                213&nbsp;&nbsp;(def&nbsp;array-spec-value
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                214&nbsp;&nbsp;&nbsp;&nbsp;(memoize
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                215&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fn&nbsp;[spec-keyword]
+                </span><br/>
+<span class="covered" title="17 out of 17 forms covered">
+                216&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s&#x2F;coll-of&nbsp;spec-keyword))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                217&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                218&nbsp;&nbsp;(def&nbsp;map-spec-value
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                219&nbsp;&nbsp;&nbsp;&nbsp;(memoize
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                220&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fn&nbsp;[spec-keyword]
+                </span><br/>
+<span class="partial" title="28 out of 31 forms covered">
+                221&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s&#x2F;map-of&nbsp;string?&nbsp;spec-keyword))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                222&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                223&nbsp;&nbsp;(def&nbsp;record-spec-symbol
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                224&nbsp;&nbsp;&nbsp;&nbsp;(memoize
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                225&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fn&nbsp;[args&nbsp;spec-keys]
+                </span><br/>
+<span class="covered" title="9 out of 9 forms covered">
+                226&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[spec-name&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args))]
+                </span><br/>
+<span class="covered" title="207 out of 207 forms covered">
+                227&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(and&nbsp;(contains?&nbsp;args&nbsp;:dove.spec&#x2F;keyword)
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                228&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword?&nbsp;(:dove.spec&#x2F;keyword&nbsp;args)))
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                229&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`(s&#x2F;with-gen
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                230&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s&#x2F;keys
+                </span><br/>
+<span class="partial" title="8 out of 9 forms covered">
+                231&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;~(if&nbsp;(:ns-keys?&nbsp;args)&nbsp;:req&nbsp;:req-un)&nbsp;[~@(:required&nbsp;spec-keys)]
+                </span><br/>
+<span class="partial" title="8 out of 9 forms covered">
+                232&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;~(if&nbsp;(:ns-keys?&nbsp;args)&nbsp;:opt&nbsp;:opt-un)&nbsp;[~@(:optional&nbsp;spec-keys)])
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                233&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;#(test.g&#x2F;fmap
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                234&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fn&nbsp;[value#]
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                235&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(assoc&nbsp;value#
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                236&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;~(:dove.spec&#x2F;keyword&nbsp;args)&nbsp;~spec-name))
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                237&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s&#x2F;gen
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                238&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(s&#x2F;keys
+                </span><br/>
+<span class="partial" title="8 out of 9 forms covered">
+                239&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;~(if&nbsp;(:ns-keys?&nbsp;args)&nbsp;:req&nbsp;:req-un)&nbsp;[~@(:required&nbsp;spec-keys)]
+                </span><br/>
+<span class="partial" title="8 out of 9 forms covered">
+                240&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;~(if&nbsp;(:ns-keys?&nbsp;args)&nbsp;:opt&nbsp;:opt-un)&nbsp;[~@(:optional&nbsp;spec-keys)]))))
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                241&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`(s&#x2F;keys
+                </span><br/>
+<span class="covered" title="9 out of 9 forms covered">
+                242&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;~(if&nbsp;(:ns-keys?&nbsp;args)&nbsp;:req&nbsp;:req-un)&nbsp;[~@(:required&nbsp;spec-keys)]
+                </span><br/>
+<span class="covered" title="9 out of 9 forms covered">
+                243&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;~(if&nbsp;(:ns-keys?&nbsp;args)&nbsp;:opt&nbsp;:opt-un)&nbsp;[~@(:optional&nbsp;spec-keys)]))))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                244&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                245&nbsp;&nbsp;(defn&nbsp;hierarchy-derive
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                246&nbsp;&nbsp;&nbsp;&nbsp;[parent&nbsp;descendant]
+                </span><br/>
+<span class="covered" title="5 out of 5 forms covered">
+                247&nbsp;&nbsp;&nbsp;&nbsp;(str&nbsp;parent&nbsp;&quot;.&quot;&nbsp;descendant))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                248&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                249&nbsp;&nbsp;(defn&nbsp;ignore-spec?
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                250&nbsp;&nbsp;&nbsp;&nbsp;[args]
+                </span><br/>
+<span class="covered" title="13 out of 13 forms covered">
+                251&nbsp;&nbsp;&nbsp;&nbsp;(contains?&nbsp;@ignored-specs&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                252&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                253&nbsp;&nbsp;(defn&nbsp;spec-def
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                254&nbsp;&nbsp;&nbsp;&nbsp;[args&nbsp;spec-symbol]
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                255&nbsp;&nbsp;&nbsp;&nbsp;;;&nbsp;if&nbsp;some&nbsp;default&nbsp;value&nbsp;is&nbsp;defined,&nbsp;return&nbsp;it&nbsp;5%&nbsp;of&nbsp;the&nbsp;time.
+                </span><br/>
+<span class="covered" title="6 out of 6 forms covered">
+                256&nbsp;&nbsp;&nbsp;&nbsp;(cond&nbsp;(:dry-run?&nbsp;args)
+                </span><br/>
+<span class="not-covered" title="0 out of 11 forms covered">
+                257&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(println&nbsp;&quot;dove:&nbsp;spec&nbsp;definition&nbsp;for&quot;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                258&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="5 out of 5 forms covered">
+                259&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(not&nbsp;(ignore-spec?&nbsp;args))
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                260&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(do
+                </span><br/>
+<span class="covered" title="12 out of 12 forms covered">
+                261&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(swap!&nbsp;ignored-specs&nbsp;conj&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="covered" title="15 out of 15 forms covered">
+                262&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(eval&nbsp;`(s&#x2F;def
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                263&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;~(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args))
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                264&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;~(eval&nbsp;spec-symbol)))))
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                265&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                266&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                267&nbsp;&nbsp;(def&nbsp;optional-key?
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                268&nbsp;&nbsp;&nbsp;&nbsp;(memoize
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                269&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fn&nbsp;[field&nbsp;args]
+                </span><br/>
+<span class="partial" title="16 out of 17 forms covered">
+                270&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(and&nbsp;(not&nbsp;(:required-union-nil-value?&nbsp;args))
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                271&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(-&gt;&gt;&nbsp;field
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                272&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.schema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                273&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.getType
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                274&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(=&nbsp;Schema$Type&#x2F;UNION))
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                275&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(-&gt;&gt;&nbsp;field
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                276&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.schema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                277&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;.getTypes
+                </span><br/>
+<span class="covered" title="6 out of 6 forms covered">
+                278&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(map&nbsp;#(.getType&nbsp;%))
+                </span><br/>
+<span class="covered" title="5 out of 5 forms covered">
+                279&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(some&nbsp;#(=&nbsp;%&nbsp;Schema$Type&#x2F;NULL))))
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                280&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:optional
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                281&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:required))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                282&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="91 out of 91 forms covered">
+                283&nbsp;&nbsp;(extend-protocol&nbsp;ToSpec
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                284&nbsp;&nbsp;&nbsp;&nbsp;Schema$StringSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                285&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                286&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;args&nbsp;`string?)
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                287&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                288&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                289&nbsp;&nbsp;&nbsp;&nbsp;Schema$BytesSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                290&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 2 forms covered">
+                291&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[logical-type&nbsp;(.getLogicalType&nbsp;this)]
+                </span><br/>
+<span class="not-covered" title="0 out of 15 forms covered">
+                292&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond&nbsp;(instance?&nbsp;LogicalTypes$Decimal&nbsp;logical-type)&nbsp;(spec-def&nbsp;args&nbsp;`~(-&gt;avro-logical-decimal?&nbsp;(.getPrecision&nbsp;^LogicalTypes$Decimal&nbsp;logical-type)&nbsp;(.getScale&nbsp;^LogicalTypes$Decimal&nbsp;logical-type)))
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                293&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:default&nbsp;(spec-def&nbsp;args&nbsp;`bytes?)))
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                294&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                295&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                296&nbsp;&nbsp;&nbsp;&nbsp;Schema$IntSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                297&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 2 forms covered">
+                298&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[logical-type&nbsp;(.getLogicalType&nbsp;this)]
+                </span><br/>
+<span class="not-covered" title="0 out of 13 forms covered">
+                299&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond&nbsp;(instance?&nbsp;LogicalTypes$Date&nbsp;logical-type)&nbsp;(spec-def&nbsp;args&nbsp;`avro-logical-date?)
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                300&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(instance?&nbsp;LogicalTypes$TimeMillis&nbsp;logical-type)&nbsp;(spec-def&nbsp;args&nbsp;`avro-logical-time-millis?)
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                301&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:default&nbsp;(spec-def&nbsp;args&nbsp;`avro-int?)))
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                302&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                303&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                304&nbsp;&nbsp;&nbsp;&nbsp;Schema$LongSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                305&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 2 forms covered">
+                306&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[logical-type&nbsp;(.getLogicalType&nbsp;this)]
+                </span><br/>
+<span class="not-covered" title="0 out of 14 forms covered">
+                307&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond&nbsp;(instance?&nbsp;LogicalTypes$TimeMicros&nbsp;logical-type)&nbsp;(spec-def&nbsp;args&nbsp;`avro-logical-time-micros?)
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                308&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(instance?&nbsp;LogicalTypes$TimestampMillis&nbsp;logical-type)&nbsp;(spec-def&nbsp;args&nbsp;`avro-logical-timestamp-millis?)
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                309&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(instance?&nbsp;LogicalTypes$TimestampMicros&nbsp;logical-type)&nbsp;(spec-def&nbsp;args&nbsp;`avro-logical-timestamp-micros?)
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                310&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:default&nbsp;(spec-def&nbsp;args&nbsp;`avro-long?)))
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                311&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                312&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                313&nbsp;&nbsp;&nbsp;&nbsp;Schema$FloatSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                314&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                315&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;args&nbsp;`avro-float?)
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                316&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                317&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                318&nbsp;&nbsp;&nbsp;&nbsp;Schema$DoubleSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                319&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                320&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;args&nbsp;`avro-double?)
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                321&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                322&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                323&nbsp;&nbsp;&nbsp;&nbsp;Schema$BooleanSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                324&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                325&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;args&nbsp;`boolean?)
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                326&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                327&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                328&nbsp;&nbsp;&nbsp;&nbsp;Schema$NullSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                329&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                330&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;args&nbsp;`nil?)
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                331&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                332&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                333&nbsp;&nbsp;&nbsp;&nbsp;Schema$EnumSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                334&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                335&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[enum-class&nbsp;(Class&#x2F;forName&nbsp;(.getFullName&nbsp;this))
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                336&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-keyword&nbsp;(keyword&nbsp;(.getNamespace&nbsp;this)
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                337&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(.getName&nbsp;this))
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                338&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-values&nbsp;(.getEnumSymbols&nbsp;this)]
+                </span><br/>
+<span class="not-covered" title="0 out of 7 forms covered">
+                339&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;(assoc&nbsp;args
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                340&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-ns&nbsp;(.getNamespace&nbsp;this)
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                341&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-name&nbsp;(.getName&nbsp;this))
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                342&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(:enum-obj?&nbsp;args)
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                343&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`~(enum-obj-spec-value&nbsp;enum-class&nbsp;spec-values)
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                344&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`~(enum-str-spec-value&nbsp;spec-values)))
+                </span><br/>
+<span class="not-covered" title="0 out of 10 forms covered">
+                345&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(and&nbsp;(:spec-ns&nbsp;args)
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                346&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(:spec-name&nbsp;args))
+                </span><br/>
+<span class="not-covered" title="0 out of 5 forms covered">
+                347&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(do&nbsp;(spec-def&nbsp;args&nbsp;`~spec-keyword)
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                348&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                349&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(.getNamespace&nbsp;this)&nbsp;(.getName&nbsp;this)))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                350&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                351&nbsp;&nbsp;&nbsp;&nbsp;Schema$FixedSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                352&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                353&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[spec-keyword&nbsp;(keyword&nbsp;(.getNamespace&nbsp;this)
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                354&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(.getName&nbsp;this))
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                355&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logical-type&nbsp;(.getLogicalType&nbsp;this)]
+                </span><br/>
+<span class="not-covered" title="0 out of 15 forms covered">
+                356&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond&nbsp;(instance?&nbsp;LogicalTypes$Decimal&nbsp;logical-type)&nbsp;(spec-def&nbsp;args&nbsp;`~(-&gt;avro-logical-decimal?&nbsp;(.getPrecision&nbsp;^LogicalTypes$Decimal&nbsp;logical-type)&nbsp;(.getScale&nbsp;^LogicalTypes$Decimal&nbsp;logical-type)))
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                357&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;;&nbsp;FIXME&nbsp;AVRO&nbsp;BUG:&nbsp;duration&nbsp;fixed(12)&nbsp;should&nbsp;be&nbsp;supported
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                358&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;;&nbsp;here,&nbsp;but&nbsp;is&nbsp;unknown&nbsp;to&nbsp;package
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                359&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;;&nbsp;org.apache.avro&#x2F;LogicalTypes.&nbsp;Meh.
+                </span><br/>
+<span class="not-covered" title="0 out of 7 forms covered">
+                360&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:default&nbsp;(spec-def&nbsp;(assoc&nbsp;args
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                361&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-ns&nbsp;(.getNamespace&nbsp;this)
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                362&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-name&nbsp;(.getName&nbsp;this))
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                363&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`~(-&gt;avro-fixed?&nbsp;(.getFixedSize&nbsp;this))))
+                </span><br/>
+<span class="not-covered" title="0 out of 10 forms covered">
+                364&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(and&nbsp;(:spec-ns&nbsp;args)
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                365&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(:spec-name&nbsp;args))
+                </span><br/>
+<span class="not-covered" title="0 out of 5 forms covered">
+                366&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(do&nbsp;(spec-def&nbsp;args&nbsp;`~spec-keyword)
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                367&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                368&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(.getNamespace&nbsp;this)&nbsp;(.getName&nbsp;this)))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                369&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                370&nbsp;&nbsp;&nbsp;&nbsp;Schema$MapSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                371&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 2 forms covered">
+                372&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[value-schema&nbsp;(.getValueType&nbsp;this)
+                </span><br/>
+<span class="not-covered" title="0 out of 6 forms covered">
+                373&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-name&nbsp;(hierarchy-derive&nbsp;(:spec-name&nbsp;args)&nbsp;(.getName&nbsp;value-schema))
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                374&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-keyword&nbsp;(to-spec!&nbsp;value-schema&nbsp;(assoc&nbsp;args&nbsp;:spec-name&nbsp;spec-name))]
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                375&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;args
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                376&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`~(map-spec-value&nbsp;spec-keyword))
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                377&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                378&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                379&nbsp;&nbsp;&nbsp;&nbsp;Schema$ArraySchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                380&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 2 forms covered">
+                381&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[value-schema&nbsp;(.getElementType&nbsp;this)
+                </span><br/>
+<span class="not-covered" title="0 out of 6 forms covered">
+                382&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-name&nbsp;(hierarchy-derive&nbsp;(:spec-name&nbsp;args)&nbsp;(.getName&nbsp;value-schema))
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                383&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-keyword&nbsp;(to-spec!&nbsp;value-schema&nbsp;(assoc&nbsp;args&nbsp;:spec-name&nbsp;spec-name))]
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                384&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;args
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                385&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`~(array-spec-value&nbsp;spec-keyword))
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                386&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                387&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                388&nbsp;&nbsp;&nbsp;&nbsp;Schema$UnionSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                389&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 20 forms covered">
+                390&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[spec-names&nbsp;(map&nbsp;(fn&nbsp;[schema]&nbsp;(let&nbsp;[spec-name&nbsp;(hierarchy-derive&nbsp;(:spec-name&nbsp;args)&nbsp;(.getName&nbsp;schema))]&nbsp;(to-spec!&nbsp;schema&nbsp;(assoc&nbsp;args&nbsp;:spec-name&nbsp;spec-name))))&nbsp;(.getTypes&nbsp;this))]
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                391&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;args
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                392&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(union-spec-symbol&nbsp;spec-names))
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                393&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                394&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                395&nbsp;&nbsp;&nbsp;&nbsp;Schema$Field
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                396&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                397&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;(.schema&nbsp;this)
+                </span><br/>
+<span class="not-covered" title="0 out of 5 forms covered">
+                398&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(assoc&nbsp;args
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                399&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-field&nbsp;this
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                400&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-name&nbsp;(.name&nbsp;this))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                401&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                402&nbsp;&nbsp;&nbsp;&nbsp;Schema$RecordSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                403&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 2 forms covered">
+                404&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[record-fields&nbsp;(.getFields&nbsp;this)
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                405&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-ns&nbsp;(.getNamespace&nbsp;this)
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                406&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-name&nbsp;(.getName&nbsp;this)
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                407&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-keyword&nbsp;(keyword&nbsp;spec-ns&nbsp;spec-name)
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                408&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-keys&nbsp;(reduce&nbsp;(fn&nbsp;[acc&nbsp;field]
+                </span><br/>
+<span class="not-covered" title="0 out of 9 forms covered">
+                409&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[spec-key&nbsp;(to-spec!&nbsp;field&nbsp;(assoc&nbsp;args
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                410&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-ns&nbsp;(hierarchy-derive&nbsp;spec-ns&nbsp;spec-name)
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                411&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-name&nbsp;(.name&nbsp;field)))]
+                </span><br/>
+<span class="not-covered" title="0 out of 9 forms covered">
+                412&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(update&nbsp;acc&nbsp;(optional-key?&nbsp;field&nbsp;args)&nbsp;conj&nbsp;spec-key)))
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                413&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{}
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                414&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;record-fields)]
+                </span><br/>
+<span class="not-covered" title="0 out of 31 forms covered">
+                415&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(doseq&nbsp;[field&nbsp;record-fields]
+                </span><br/>
+<span class="not-covered" title="0 out of 14 forms covered">
+                416&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;field&nbsp;(assoc&nbsp;args
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                417&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-ns&nbsp;(hierarchy-derive&nbsp;spec-ns&nbsp;spec-name))))
+                </span><br/>
+<span class="not-covered" title="0 out of 7 forms covered">
+                418&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;(assoc&nbsp;args
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                419&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-ns&nbsp;spec-ns
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                420&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-name&nbsp;spec-name)
+                </span><br/>
+<span class="not-covered" title="0 out of 7 forms covered">
+                421&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(record-spec-symbol&nbsp;(assoc&nbsp;args
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                422&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-ns&nbsp;spec-ns
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                423&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-name&nbsp;spec-name)
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                424&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-keys))
+                </span><br/>
+<span class="not-covered" title="0 out of 10 forms covered">
+                425&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(and&nbsp;(:spec-ns&nbsp;args)
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                426&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(:spec-name&nbsp;args))
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                427&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(do
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                428&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;args&nbsp;`~spec-keyword)
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                429&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                430&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-keyword))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                431&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="91 out of 91 forms covered">
+                432&nbsp;&nbsp;(extend-protocol&nbsp;ToSpec
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                433&nbsp;&nbsp;&nbsp;&nbsp;Schema$StringSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                434&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                435&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;args&nbsp;`string?)
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                436&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                437&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                438&nbsp;&nbsp;&nbsp;&nbsp;Schema$BytesSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                439&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                440&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[logical-type&nbsp;(.getLogicalType&nbsp;this)]
+                </span><br/>
+<span class="partial" title="14 out of 15 forms covered">
+                441&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond&nbsp;(instance?&nbsp;LogicalTypes$Decimal&nbsp;logical-type)&nbsp;(spec-def&nbsp;args&nbsp;`~(-&gt;avro-logical-decimal?&nbsp;(.getPrecision&nbsp;^LogicalTypes$Decimal&nbsp;logical-type)&nbsp;(.getScale&nbsp;^LogicalTypes$Decimal&nbsp;logical-type)))
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                442&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:default&nbsp;(spec-def&nbsp;args&nbsp;`bytes?)))
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                443&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                444&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                445&nbsp;&nbsp;&nbsp;&nbsp;Schema$IntSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                446&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                447&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[logical-type&nbsp;(.getLogicalType&nbsp;this)]
+                </span><br/>
+<span class="partial" title="12 out of 13 forms covered">
+                448&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond&nbsp;(instance?&nbsp;LogicalTypes$Date&nbsp;logical-type)&nbsp;(spec-def&nbsp;args&nbsp;`avro-logical-date?)
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                449&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(instance?&nbsp;LogicalTypes$TimeMillis&nbsp;logical-type)&nbsp;(spec-def&nbsp;args&nbsp;`avro-logical-time-millis?)
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                450&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:default&nbsp;(spec-def&nbsp;args&nbsp;`avro-int?)))
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                451&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                452&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                453&nbsp;&nbsp;&nbsp;&nbsp;Schema$LongSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                454&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                455&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[logical-type&nbsp;(.getLogicalType&nbsp;this)]
+                </span><br/>
+<span class="partial" title="13 out of 14 forms covered">
+                456&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond&nbsp;(instance?&nbsp;LogicalTypes$TimeMicros&nbsp;logical-type)&nbsp;(spec-def&nbsp;args&nbsp;`avro-logical-time-micros?)
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                457&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(instance?&nbsp;LogicalTypes$TimestampMillis&nbsp;logical-type)&nbsp;(spec-def&nbsp;args&nbsp;`avro-logical-timestamp-millis?)
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                458&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(instance?&nbsp;LogicalTypes$TimestampMicros&nbsp;logical-type)&nbsp;(spec-def&nbsp;args&nbsp;`avro-logical-timestamp-micros?)
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                459&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:default&nbsp;(spec-def&nbsp;args&nbsp;`avro-long?)))
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                460&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                461&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                462&nbsp;&nbsp;&nbsp;&nbsp;Schema$FloatSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                463&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                464&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;args&nbsp;`avro-float?)
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                465&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                466&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                467&nbsp;&nbsp;&nbsp;&nbsp;Schema$DoubleSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                468&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                469&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;args&nbsp;`avro-double?)
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                470&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                471&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                472&nbsp;&nbsp;&nbsp;&nbsp;Schema$BooleanSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                473&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                474&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;args&nbsp;`boolean?)
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                475&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                476&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                477&nbsp;&nbsp;&nbsp;&nbsp;Schema$NullSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                478&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                479&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;args&nbsp;`nil?)
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                480&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                481&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                482&nbsp;&nbsp;&nbsp;&nbsp;Schema$EnumSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                483&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                484&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[enum-class&nbsp;(Class&#x2F;forName&nbsp;(.getFullName&nbsp;this))
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                485&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-keyword&nbsp;(keyword&nbsp;(.getNamespace&nbsp;this)
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                486&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(.getName&nbsp;this))
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                487&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-values&nbsp;(.getEnumSymbols&nbsp;this)]
+                </span><br/>
+<span class="covered" title="7 out of 7 forms covered">
+                488&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;(assoc&nbsp;args
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                489&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-ns&nbsp;(.getNamespace&nbsp;this)
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                490&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-name&nbsp;(.getName&nbsp;this))
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                491&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(:enum-obj?&nbsp;args)
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                492&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`~(enum-obj-spec-value&nbsp;enum-class&nbsp;spec-values)
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                493&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`~(enum-str-spec-value&nbsp;spec-values)))
+                </span><br/>
+<span class="covered" title="10 out of 10 forms covered">
+                494&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(and&nbsp;(:spec-ns&nbsp;args)
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                495&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(:spec-name&nbsp;args))
+                </span><br/>
+<span class="covered" title="5 out of 5 forms covered">
+                496&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(do&nbsp;(spec-def&nbsp;args&nbsp;`~spec-keyword)
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                497&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                498&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(.getNamespace&nbsp;this)&nbsp;(.getName&nbsp;this)))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                499&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                500&nbsp;&nbsp;&nbsp;&nbsp;Schema$FixedSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                501&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                502&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[spec-keyword&nbsp;(keyword&nbsp;(.getNamespace&nbsp;this)
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                503&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(.getName&nbsp;this))
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                504&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;logical-type&nbsp;(.getLogicalType&nbsp;this)]
+                </span><br/>
+<span class="partial" title="7 out of 15 forms covered">
+                505&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(cond&nbsp;(instance?&nbsp;LogicalTypes$Decimal&nbsp;logical-type)&nbsp;(spec-def&nbsp;args&nbsp;`~(-&gt;avro-logical-decimal?&nbsp;(.getPrecision&nbsp;^LogicalTypes$Decimal&nbsp;logical-type)&nbsp;(.getScale&nbsp;^LogicalTypes$Decimal&nbsp;logical-type)))
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                506&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;;&nbsp;FIXME&nbsp;AVRO&nbsp;BUG:&nbsp;duration&nbsp;fixed(12)&nbsp;should&nbsp;be&nbsp;supported
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                507&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;;&nbsp;here,&nbsp;but&nbsp;is&nbsp;unknown&nbsp;to&nbsp;package
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                508&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;;;&nbsp;org.apache.avro&#x2F;LogicalTypes.&nbsp;Meh.
+                </span><br/>
+<span class="covered" title="7 out of 7 forms covered">
+                509&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:default&nbsp;(spec-def&nbsp;(assoc&nbsp;args
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                510&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-ns&nbsp;(.getNamespace&nbsp;this)
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                511&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-name&nbsp;(.getName&nbsp;this))
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                512&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`~(-&gt;avro-fixed?&nbsp;(.getFixedSize&nbsp;this))))
+                </span><br/>
+<span class="covered" title="10 out of 10 forms covered">
+                513&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(and&nbsp;(:spec-ns&nbsp;args)
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                514&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(:spec-name&nbsp;args))
+                </span><br/>
+<span class="covered" title="5 out of 5 forms covered">
+                515&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(do&nbsp;(spec-def&nbsp;args&nbsp;`~spec-keyword)
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                516&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                517&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(.getNamespace&nbsp;this)&nbsp;(.getName&nbsp;this)))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                518&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                519&nbsp;&nbsp;&nbsp;&nbsp;Schema$MapSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                520&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                521&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[value-schema&nbsp;(.getValueType&nbsp;this)
+                </span><br/>
+<span class="covered" title="6 out of 6 forms covered">
+                522&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-name&nbsp;(hierarchy-derive&nbsp;(:spec-name&nbsp;args)&nbsp;(.getName&nbsp;value-schema))
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                523&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-keyword&nbsp;(to-spec!&nbsp;value-schema&nbsp;(assoc&nbsp;args&nbsp;:spec-name&nbsp;spec-name))]
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                524&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;args
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                525&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`~(map-spec-value&nbsp;spec-keyword))
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                526&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                527&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                528&nbsp;&nbsp;&nbsp;&nbsp;Schema$ArraySchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                529&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                530&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[value-schema&nbsp;(.getElementType&nbsp;this)
+                </span><br/>
+<span class="covered" title="6 out of 6 forms covered">
+                531&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-name&nbsp;(hierarchy-derive&nbsp;(:spec-name&nbsp;args)&nbsp;(.getName&nbsp;value-schema))
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                532&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-keyword&nbsp;(to-spec!&nbsp;value-schema&nbsp;(assoc&nbsp;args&nbsp;:spec-name&nbsp;spec-name))]
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                533&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;args
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                534&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;`~(array-spec-value&nbsp;spec-keyword))
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                535&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                536&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                537&nbsp;&nbsp;&nbsp;&nbsp;Schema$UnionSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                538&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="covered" title="20 out of 20 forms covered">
+                539&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[spec-names&nbsp;(map&nbsp;(fn&nbsp;[schema]&nbsp;(let&nbsp;[spec-name&nbsp;(hierarchy-derive&nbsp;(:spec-name&nbsp;args)&nbsp;(.getName&nbsp;schema))]&nbsp;(to-spec!&nbsp;schema&nbsp;(assoc&nbsp;args&nbsp;:spec-name&nbsp;spec-name))))&nbsp;(.getTypes&nbsp;this))]
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                540&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;args
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                541&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(union-spec-symbol&nbsp;spec-names))
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                542&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                543&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                544&nbsp;&nbsp;&nbsp;&nbsp;Schema$Field
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                545&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                546&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;(.schema&nbsp;this)
+                </span><br/>
+<span class="covered" title="5 out of 5 forms covered">
+                547&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(assoc&nbsp;args
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                548&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-field&nbsp;this
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                549&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-name&nbsp;(.name&nbsp;this))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                550&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                551&nbsp;&nbsp;&nbsp;&nbsp;Schema$RecordSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                552&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;[this&nbsp;args]
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                553&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[record-fields&nbsp;(.getFields&nbsp;this)
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                554&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-ns&nbsp;(.getNamespace&nbsp;this)
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                555&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-name&nbsp;(.getName&nbsp;this)
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                556&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-keyword&nbsp;(keyword&nbsp;spec-ns&nbsp;spec-name)
+                </span><br/>
+<span class="covered" title="3 out of 3 forms covered">
+                557&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-keys&nbsp;(reduce&nbsp;(fn&nbsp;[acc&nbsp;field]
+                </span><br/>
+<span class="covered" title="9 out of 9 forms covered">
+                558&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[spec-key&nbsp;(to-spec!&nbsp;field&nbsp;(assoc&nbsp;args
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                559&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-ns&nbsp;(hierarchy-derive&nbsp;spec-ns&nbsp;spec-name)
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                560&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-name&nbsp;(.name&nbsp;field)))]
+                </span><br/>
+<span class="covered" title="9 out of 9 forms covered">
+                561&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(update&nbsp;acc&nbsp;(optional-key?&nbsp;field&nbsp;args)&nbsp;conj&nbsp;spec-key)))
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                562&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{}
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                563&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;record-fields)]
+                </span><br/>
+<span class="partial" title="26 out of 31 forms covered">
+                564&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(doseq&nbsp;[field&nbsp;record-fields]
+                </span><br/>
+<span class="partial" title="7 out of 14 forms covered">
+                565&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(to-spec!&nbsp;field&nbsp;(assoc&nbsp;args
+                </span><br/>
+<span class="partial" title="4 out of 8 forms covered">
+                566&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-ns&nbsp;(hierarchy-derive&nbsp;spec-ns&nbsp;spec-name))))
+                </span><br/>
+<span class="covered" title="7 out of 7 forms covered">
+                567&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;(assoc&nbsp;args
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                568&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-ns&nbsp;spec-ns
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                569&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-name&nbsp;spec-name)
+                </span><br/>
+<span class="covered" title="7 out of 7 forms covered">
+                570&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(record-spec-symbol&nbsp;(assoc&nbsp;args
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                571&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-ns&nbsp;spec-ns
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                572&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:spec-name&nbsp;spec-name)
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                573&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-keys))
+                </span><br/>
+<span class="covered" title="10 out of 10 forms covered">
+                574&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;(and&nbsp;(:spec-ns&nbsp;args)
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                575&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(:spec-name&nbsp;args))
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                576&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(do
+                </span><br/>
+<span class="covered" title="4 out of 4 forms covered">
+                577&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(spec-def&nbsp;args&nbsp;`~spec-keyword)
+                </span><br/>
+<span class="covered" title="8 out of 8 forms covered">
+                578&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(keyword&nbsp;(:spec-ns&nbsp;args)&nbsp;(:spec-name&nbsp;args)))
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                579&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;spec-keyword))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                580&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="31 out of 31 forms covered">
+                581&nbsp;&nbsp;(extend-protocol&nbsp;MapQualifier
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                582&nbsp;&nbsp;&nbsp;&nbsp;Schema$MapSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                583&nbsp;&nbsp;&nbsp;&nbsp;(-qualify-map&nbsp;[schema&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 2 forms covered">
+                584&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(into
+                </span><br/>
+<span class="not-covered" title="0 out of 5 forms covered">
+                585&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(-&gt;&nbsp;args&nbsp;:value&nbsp;empty)
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                586&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(map&nbsp;(fn&nbsp;[[k&nbsp;v]]
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                587&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[new-v&nbsp;(-qualify-map&nbsp;(.getValueType&nbsp;schema)
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                588&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(-&gt;&nbsp;args
+                </span><br/>
+<span class="not-covered" title="0 out of 5 forms covered">
+                589&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(update&nbsp;:path&nbsp;conj&nbsp;k)
+                </span><br/>
+<span class="not-covered" title="0 out of 2 forms covered">
+                590&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(assoc&nbsp;:value&nbsp;v)))]
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                591&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[k&nbsp;new-v]))
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                592&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(:value&nbsp;args))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                593&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                594&nbsp;&nbsp;&nbsp;&nbsp;Schema$ArraySchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                595&nbsp;&nbsp;&nbsp;&nbsp;(-qualify-map&nbsp;[schema&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 2 forms covered">
+                596&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(into
+                </span><br/>
+<span class="not-covered" title="0 out of 5 forms covered">
+                597&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(-&gt;&nbsp;args&nbsp;:value&nbsp;empty)
+                </span><br/>
+<span class="not-covered" title="0 out of 2 forms covered">
+                598&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(map-indexed
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                599&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(fn&nbsp;[i&nbsp;v]
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                600&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(-qualify-map&nbsp;(.getElementType&nbsp;schema)
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                601&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(-&gt;&nbsp;args
+                </span><br/>
+<span class="not-covered" title="0 out of 5 forms covered">
+                602&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(update&nbsp;:path&nbsp;conj&nbsp;i)
+                </span><br/>
+<span class="not-covered" title="0 out of 2 forms covered">
+                603&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(assoc&nbsp;:value&nbsp;v))))
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                604&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(:value&nbsp;args))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                605&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                606&nbsp;&nbsp;&nbsp;&nbsp;Schema$UnionSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                607&nbsp;&nbsp;&nbsp;&nbsp;(-qualify-map&nbsp;[schema&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                608&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[explicit-union-types&nbsp;(:explicit-union-types&nbsp;args)
+                </span><br/>
+<span class="not-covered" title="0 out of 14 forms covered">
+                609&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_&nbsp;(assert&nbsp;explicit-union-types&nbsp;&quot;Qualifying&nbsp;a&nbsp;union&nbsp;requires&nbsp;:explicit-union-types.&quot;)
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                610&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;possible-types&nbsp;(.getTypes&nbsp;schema)
+                </span><br/>
+<span class="not-covered" title="0 out of 11 forms covered">
+                611&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;explicit-type&nbsp;(explicit-union-types&nbsp;possible-types&nbsp;(-&gt;&nbsp;args&nbsp;:path&nbsp;reverse)&nbsp;(:value&nbsp;args))
+                </span><br/>
+<span class="not-covered" title="0 out of 14 forms covered">
+                612&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;_&nbsp;(assert&nbsp;explicit-type&nbsp;&quot;Qualifying&nbsp;a&nbsp;union&nbsp;requires&nbsp;an&nbsp;matching&nbsp;explicit&nbsp;type.&quot;)]
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                613&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(-qualify-map&nbsp;explicit-type&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                614&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                615&nbsp;&nbsp;&nbsp;&nbsp;Schema$RecordSchema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                616&nbsp;&nbsp;&nbsp;&nbsp;(-qualify-map&nbsp;[schema&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 2 forms covered">
+                617&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[required-keys&nbsp;(-&gt;&gt;&nbsp;schema
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                618&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(.getFields)
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                619&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(map&nbsp;#(.name&nbsp;%)))
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                620&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;actual-keys&nbsp;(-&gt;&gt;&nbsp;(:value&nbsp;args)
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                621&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;keys
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                622&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(map&nbsp;name))
+                </span><br/>
+<span class="not-covered" title="0 out of 6 forms covered">
+                623&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;missing-keys&nbsp;(remove&nbsp;(set&nbsp;actual-keys)&nbsp;required-keys)]
+                </span><br/>
+<span class="not-covered" title="0 out of 15 forms covered">
+                624&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(assert&nbsp;(empty?&nbsp;missing-keys)
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                625&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(str&nbsp;&quot;Qualifying&nbsp;data&nbsp;to&nbsp;match&nbsp;a&nbsp;schema&nbsp;requires&nbsp;all&nbsp;schema&nbsp;attributes&nbsp;to&nbsp;be&nbsp;filled.&quot;
+                </span><br/>
+<span class="not-covered" title="0 out of 8 forms covered">
+                626&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{:path&nbsp;(reverse&nbsp;(:path&nbsp;args))
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                627&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:missing-key&nbsp;missing-keys})))
+                </span><br/>
+<span class="not-covered" title="0 out of 2 forms covered">
+                628&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(into
+                </span><br/>
+<span class="not-covered" title="0 out of 5 forms covered">
+                629&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(-&gt;&nbsp;args&nbsp;:value&nbsp;empty)
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                630&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(map&nbsp;(fn&nbsp;[[k&nbsp;v]]
+                </span><br/>
+<span class="not-covered" title="0 out of 2 forms covered">
+                631&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(let&nbsp;[kw-namespace&nbsp;(.getFullName&nbsp;schema)
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                632&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;kw-name&nbsp;(name&nbsp;k)
+                </span><br/>
+<span class="not-covered" title="0 out of 2 forms covered">
+                633&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;field&nbsp;(.getField&nbsp;schema&nbsp;kw-name)
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                634&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;new-k&nbsp;(keyword&nbsp;kw-namespace&nbsp;kw-name)
+                </span><br/>
+<span class="not-covered" title="0 out of 2 forms covered">
+                635&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;new-v&nbsp;(-qualify-map
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                636&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(.schema&nbsp;field)
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                637&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(-&gt;&nbsp;args
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                638&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(assoc&nbsp;:value&nbsp;v)
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                639&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(update&nbsp;:path&nbsp;conj&nbsp;k)))]
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                640&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;[new-k&nbsp;new-v]))
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                641&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(:value&nbsp;args))))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                642&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                643&nbsp;&nbsp;&nbsp;&nbsp;Object
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                644&nbsp;&nbsp;&nbsp;&nbsp;(-qualify-map&nbsp;[schema&nbsp;args]
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                645&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(:value&nbsp;args)))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                646&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                647&nbsp;&nbsp;(defn&nbsp;qualify-map
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                648&nbsp;&nbsp;&nbsp;&nbsp;&quot;Recursively&nbsp;qualify&nbsp;keys&nbsp;of&nbsp;a&nbsp;map&nbsp;to&nbsp;match&nbsp;some&nbsp;schema
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                649&nbsp;&nbsp;&nbsp;&nbsp;namespace.&nbsp;Example&nbsp;dumb&nbsp;`explicit-union-types`:
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                650&nbsp;&nbsp;
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                651&nbsp;&nbsp;&nbsp;&nbsp;```&nbsp;clojure
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                652&nbsp;&nbsp;&nbsp;&nbsp;(fn&nbsp;[possible-types&nbsp;path&nbsp;value]
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                653&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(if&nbsp;value
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                654&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(last&nbsp;possible-types)
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                655&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;(first&nbsp;possible-types)))
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                656&nbsp;&nbsp;&nbsp;&nbsp;```&quot;
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                657&nbsp;&nbsp;&nbsp;&nbsp;[value&nbsp;schema&nbsp;explicit-union-types]
+                </span><br/>
+<span class="not-covered" title="0 out of 3 forms covered">
+                658&nbsp;&nbsp;&nbsp;&nbsp;(-qualify-map&nbsp;schema
+                </span><br/>
+<span class="not-covered" title="0 out of 4 forms covered">
+                659&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;{:value&nbsp;value
+                </span><br/>
+<span class="not-covered" title="0 out of 1 forms covered">
+                660&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:explicit-union-types&nbsp;explicit-union-types}))
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                661&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                662&nbsp;&nbsp;(def&nbsp;transform-keys
+                </span><br/>
+<span class="covered" title="1 out of 1 forms covered">
+                663&nbsp;&nbsp;&nbsp;&nbsp;case.e&#x2F;transform-keys)
+                </span><br/>
+<span class="blank" title="0 out of 0 forms covered">
+                664&nbsp;&nbsp;
+                </span><br/>
+<span class="covered" title="2 out of 2 forms covered">
+                665&nbsp;&nbsp;(def&nbsp;unqualify-map
+                </span><br/>
+<span class="not-tracked" title="0 out of 0 forms covered">
+                666&nbsp;&nbsp;&nbsp;&nbsp;&quot;Recursively&nbsp;unqualify&nbsp;keys&nbsp;of&nbsp;a&nbsp;map,&nbsp;provided&nbsp;they&#x27;re&nbsp;keyword.&quot;
+                </span><br/>
+<span class="not-covered" title="0 out of 7 forms covered">
+                667&nbsp;&nbsp;&nbsp;&nbsp;#(case.e&#x2F;transform-keys&nbsp;(comp&nbsp;keyword&nbsp;name)&nbsp;%))
+                </span><br/>
+ </body>
+</html>
