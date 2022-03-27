@@ -3,7 +3,7 @@
 [![Build status](https://img.shields.io/github/workflow/status/piotr-yuxuan/dove/Walter%20CD)](https://github.com/piotr-yuxuan/dove/actions/workflows/walter-cd.yml)
 [![Clojars badge](https://img.shields.io/clojars/v/dove.svg)](https://clojars.org/piotr-yuxuan/dove)
 [![Clojars downloads](https://img.shields.io/clojars/dt/dove)](https://clojars.org/dove)
-[![cljdoc badge](https://cljdoc.org/badge/dove)](https://cljdoc.org/d/piotr-yuxuan/dove/CURRENT)
+[![cljdoc badge](https://cljdoc.org/badge/dove)](https://cljdoc.org/d/dove/dove/CURRENT)
 [![GitHub license](https://img.shields.io/github/license/piotr-yuxuan/dove)](https://github.com/piotr-yuxuan/dove/blob/main/LICENSE)
 [![GitHub issues](https://img.shields.io/github/issues/piotr-yuxuan/dove)](https://github.com/piotr-yuxuan/dove/issues)
 
