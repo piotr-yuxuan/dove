@@ -16,7 +16,8 @@
                  [clj-time "0.15.1"]]
   :main piotr-yuxuan.walter-ci.main
   :profiles {:github {:github/topics ["clojure" "avro" "spec" "avro-schema"
-                                      "clojure-specs" "clojure-spec" "avro-format"]}
+                                      "clojure-specs" "clojure-spec" "avro-format"]
+                      :github/private? false}
              :provided {:dependencies [[org.clojure/clojure "1.10.3"]]}
              :dev {:global-vars {*warn-on-reflection* true}
                    :plugins [[lein-shell "0.5.0"]]
