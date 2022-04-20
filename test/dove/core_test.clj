@@ -198,6 +198,7 @@
             (is (s/valid? (dove/->avro-fixed? 12) (:aDurationBytes sample)))))))))
 
 (deftest api-test
-  (testing "")
+  (testing ""
+    (is true))
   ;; case is left as is
   )
