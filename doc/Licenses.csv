@@ -1,4 +1,3 @@
-Library name,Version,License name
 "camel-snake-kebab","0.4.0","Eclipse Public License"
 "classworlds","1.1-alpha-2","/*"
 "clj-time","0.15.1","MIT License"
@@ -40,3 +39,4 @@ Library name,Version,License name
 "org.tukaani/xz","1.5","Public Domain"
 "org.xerial.snappy/snappy-java","1.1.1.3","The Apache Software License, Version 2.0"
 "primitive-math","0.1.4","MIT License"
+Library name,Version,License name
