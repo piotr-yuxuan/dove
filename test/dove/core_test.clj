@@ -1,25 +1,11 @@
 (ns dove.core-test
   "Reference: https://avro.apache.org/docs/1.8.2/spec.html.
   Any difference should be considered a bug."
-  (:require [clojure.test :refer :all]
-            [dove.core :as dove]
+  (:require [dove.core :as dove]
             [clojure.spec.alpha :as s]
-            [clojure.spec.gen.alpha :as gen])
-  (:import (dove PrimitiveTypes
-                 EmptyRecord
-                 ParentRecord
-                 SomeEnum
-                 Fixed8
-                 Fixed16
-                 ArrayRecord
-                 MapRecord
-                 CardSuit
-                 duration
-                 UnionRecord
-                 LogicalTypes
-                 _cA_se_æÂê胡雨軒Петрº_Enum
-                 _cA_se_æÂê胡雨軒Петрº_Fixed
-                 _cA_se_æÂê胡雨軒Петрº_Schema)
+            [clojure.spec.gen.alpha :as gen]
+            [clojure.test :refer :all])
+  (:import (dove PrimitiveTypes EmptyRecord ParentRecord SomeEnum Fixed8 Fixed16 ArrayRecord MapRecord CardSuit duration UnionRecord LogicalTypes _cA_se_æÂê胡雨軒Петрº_Enum _cA_se_æÂê胡雨軒Петрº_Fixed _cA_se_æÂê胡雨軒Петрº_Schema)
            (java.nio ByteBuffer)
            (org.joda.time LocalDate DateTime)
            (org.apache.avro Schema$FixedSchema)))
