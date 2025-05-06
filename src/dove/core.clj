@@ -187,6 +187,7 @@ Represents an amount of time defined by a number of months, days and
   `fixed(12)` in generated Java sources."
   (->avro-fixed? 12))
 
+;; CR: be careful with memoize. It might explode the memory!
 (def enum-obj-spec-value
   (memoize
     (fn [enum-class spec-values]
@@ -280,6 +281,7 @@ Represents an amount of time defined by a number of months, days and
         :optional
         :required))))
 
+;; CR: separate the code for each schema into its own expression 
 (extend-protocol ToSpec
   Schema$StringSchema
   (to-spec! [this args]
@@ -347,7 +349,7 @@ Represents an amount of time defined by a number of months, days and
         (do (spec-def args `~spec-keyword)
             (keyword (:spec-ns args) (:spec-name args)))
         (keyword (.getNamespace this) (.getName this)))))
-
+;; CR: create a function ->keyword that receives an avro obj and returns the corresponding keyword
   Schema$FixedSchema
   (to-spec! [this args]
     (let [spec-keyword (keyword (.getNamespace this)
@@ -361,6 +363,7 @@ Represents an amount of time defined by a number of months, days and
                                  :spec-ns (.getNamespace this)
                                  :spec-name (.getName this))
                                `~(->avro-fixed? (.getFixedSize this))))
+;; CR: this code appears several time - can you make a function of it?
       (if (and (:spec-ns args)
                (:spec-name args))
         (do (spec-def args `~spec-keyword)
@@ -551,6 +554,7 @@ Represents an amount of time defined by a number of months, days and
   Schema$RecordSchema
   (to-spec! [this args]
     (let [record-fields (.getFields this)
+          ;; CR: refactor to [spec-ns spec-name spec-keyword] (spec-data this): 3 lines combine into 1 :)
           spec-ns (.getNamespace this)
           spec-name (.getName this)
           spec-keyword (keyword spec-ns spec-name)
@@ -561,9 +565,11 @@ Represents an amount of time defined by a number of months, days and
                                 (update acc (optional-key? field args) conj spec-key)))
                             {}
                             record-fields)]
+      ;; CR: something is weird to-spec! seems to be a function that returns something but its return value is ignored
       (doseq [field record-fields]
         (to-spec! field (assoc args
                           :spec-ns (hierarchy-derive spec-ns spec-name))))
+      ;; CR: does spec-def have side effect? if yes rename to spec-def!
       (spec-def (assoc args
                   :spec-ns spec-ns
                   :spec-name spec-name)
@@ -574,6 +580,7 @@ Represents an amount of time defined by a number of months, days and
       (if (and (:spec-ns args)
                (:spec-name args))
         (do
+          ;; can you make spec-def return the keyword that corresponds to the spec. It will save the need for the `do` expression
           (spec-def args `~spec-keyword)
           (keyword (:spec-ns args) (:spec-name args)))
         spec-keyword))))
